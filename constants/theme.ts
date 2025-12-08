@@ -1,53 +1,63 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import { Platform } from 'react-native';
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
 export const Colors = {
+  primary: '#4A90E2',
+  secondary: '#E3F2FD',
+  background: '#FFFFFF',
+  surface: '#F5F5F5',
+  text: '#000000',
+  textSecondary: '#666666',
+  border: '#EEEEEE',
+  error: '#FF4444',
+  success: '#4CAF50',
+  wallet: '#4A90E2',
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    background: '#FFFFFF',
+    text: '#000000',
+    primary: '#007AFF',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    background: '#000000',
+    text: '#FFFFFF',
+    primary: '#0A84FF',
   },
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+export const Spacing = {
+  xs: 5,
+  sm: 10,
+  md: 15,
+  lg: 20,
+  xl: 30,
+  xxl: 40,
+};
+
+export const Typography = {
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold' as const,
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  heading: {
+    fontSize: 20,
+    fontWeight: '600' as const,
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+  body: {
+    fontSize: 16,
+    fontWeight: 'normal' as const,
   },
-});
+  caption: {
+    fontSize: 12,
+    fontWeight: 'normal' as const,
+  },
+};
+
+export const BorderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 20,
+  full: 9999,
+};
+
+export const Fonts = {
+  regular: 'Inter-Regular',
+  bold: 'Inter-Bold',
+  mono: 'SpaceMono-Regular',
+};

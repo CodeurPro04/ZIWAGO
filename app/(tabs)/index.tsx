@@ -1,98 +1,164 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  TouchableOpacity, 
+  ScrollView,
+  ActivityIndicator,
+  Platform,
+  Dimensions,
+  Animated,
+  Image
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { MapPin } from 'lucide-react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const { width, height } = Dimensions.get('window');
+
+// Valeur par défaut temporaire
+const firstName = 'John';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Bonjour, {firstName} !</Text>
+        </View>
+
+        <View style={styles.content}>
+          {/* Barre de recherche */}
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => router.push('/booking/location')}
+            activeOpacity={0.7}
+          >
+            {/*<MapPin size={24} color={Colors.primary} />*/}
+            <Text style={styles.searchPlaceholder}>Où est garée la voiture ?</Text>
+          </TouchableOpacity>
+
+          {/* Section Services */}
+          <View style={styles.serviceCardsRow}>
+            {/* Carte Réserver maintenant */}
+            <TouchableOpacity
+              style={styles.serviceCard}
+              onPress={() => router.push('/booking/vehicle-selection')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.illustrationContainer}>
+                <Image
+                  source={require("@/assets/images/car-pana1.png")}
+                  style={styles.illustration}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={styles.serviceCardTitle}>Réserver{'\n'}maintenant</Text>
+              <Text style={styles.serviceCardSubtitle}>
+                Faites venir un laveur chez vous immédiatement
+              </Text>
+            </TouchableOpacity>
+
+            {/* Carte Programmer */}
+            <TouchableOpacity 
+              style={styles.serviceCard}
+              activeOpacity={0.8}
+              onPress={() => router.push('/booking/schedule')}
+            >
+              <View style={styles.illustrationContainer}>
+                <Image
+                  source={require("@/assets/images/management-pana1.png")}
+                  style={styles.illustration}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={styles.serviceCardTitle}>Programmer un{'\n'}lavage</Text>
+              <Text style={styles.serviceCardSubtitle}>
+                Réservez un créneau qui vous convient
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    padding: 20,
+    paddingTop: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  greeting: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  content: {
+    padding: 20,
+    paddingTop: 10,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#F5F5F5',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    gap: 12,
   },
-  stepContainer: {
-    gap: 8,
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000000',
+  },
+  serviceCardsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  serviceCard: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    padding: 20,
+    paddingTop: 24,
+    paddingBottom: 24,
+    minHeight: 280,
+    justifyContent: 'space-between',
+  },
+  illustrationContainer: {
+    width: '100%',
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  illustration: {
+    width: '100%',
+    height: '100%',
+  },
+  serviceCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
     marginBottom: 8,
+    lineHeight: 24,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  serviceCardSubtitle: {
+    fontSize: 13,
+    color: '#666666',
+    lineHeight: 18,
   },
 });
