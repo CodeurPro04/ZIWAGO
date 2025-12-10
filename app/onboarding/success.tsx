@@ -25,7 +25,6 @@ export default function OnboardingSuccess() {
         {/* Pagination dots */}
         <View style={styles.pagination}>
           <View style={styles.paginationDot} />
-          <View style={[styles.paginationDot,]} />
           <View style={[styles.paginationDot, styles.paginationDotActive]} />
         </View>
 
@@ -37,7 +36,7 @@ export default function OnboardingSuccess() {
           <View style={styles.buttonsContainer}>
             <Button 
               title="Continuer" 
-              onPress={() => router.replace('/(tabs)')} 
+              onPress={() => router.replace('/auth/phone')} 
             />
 
             <Button

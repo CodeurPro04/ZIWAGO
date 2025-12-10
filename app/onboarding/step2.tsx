@@ -20,7 +20,7 @@ export default function OnboardingStep2() {
 
   const handleContinue = () => {
     if (firstName && lastName && accepted) {
-      router.push("/onboarding/success");
+      router.push("/(tabs)");
     }
   };
 

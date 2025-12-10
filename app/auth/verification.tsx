@@ -55,7 +55,7 @@ export default function VerificationScreen() {
       Keyboard.dismiss();
       setTimeout(() => {
         // Vérification du code ici
-        router.push('/onboarding/step1');
+        router.push('/onboarding/step2');
       }, 300);
     }
   };
