@@ -328,7 +328,7 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Impact écologique */}
+        {/* Impact écologique 
         <View style={styles.impactSection}>
           <View style={styles.impactCard}>
             <View style={styles.impactHeader}>
@@ -349,7 +349,7 @@ export default function ProfileScreen() {
               Merci pour votre contribution à l'environnement
             </Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Actions dangereuses */}
         <View style={styles.dangerSection}>

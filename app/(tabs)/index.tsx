@@ -1,44 +1,49 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  TouchableOpacity, 
+import React, { useEffect, useState, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Platform,
   Dimensions,
   Animated,
-  Image
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { MapPin } from 'lucide-react-native';
+  Image,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { MapPin } from "lucide-react-native";
+import { useUserStore } from "@/hooks/useUserData";
 
-const { width, height } = Dimensions.get('window');
-
-// Valeur par défaut temporaire
-const firstName = 'John';
+const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { firstName, lastName } = useUserStore();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
-          <Text style={styles.greeting}>Bonjour, {firstName} !</Text>
+          <Text style={styles.greeting}>
+            Bonjour{firstName ? `, ${firstName} ${lastName}` : ""} !
+          </Text>
         </View>
-
         <View style={styles.content}>
           {/* Barre de recherche */}
           <TouchableOpacity
             style={styles.searchBar}
-            onPress={() => router.push('/booking/location')}
+            onPress={() => router.push("/booking/location")}
             activeOpacity={0.7}
           >
             {/*<MapPin size={24} color={Colors.primary} />*/}
-            <Text style={styles.searchPlaceholder}>Où est garée la voiture ?</Text>
+            <Text style={styles.searchPlaceholder}>
+              Où est garée la voiture ?
+            </Text>
           </TouchableOpacity>
 
           {/* Section Services */}
@@ -46,7 +51,7 @@ export default function HomeScreen() {
             {/* Carte Réserver maintenant */}
             <TouchableOpacity
               style={styles.serviceCard}
-              onPress={() => router.push('/booking/vehicle-selection')}
+              onPress={() => router.push("/booking/vehicle-selection")}
               activeOpacity={0.8}
             >
               <View style={styles.illustrationContainer}>
@@ -56,17 +61,19 @@ export default function HomeScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.serviceCardTitle}>Réserver{'\n'}maintenant</Text>
+              <Text style={styles.serviceCardTitle}>
+                Réserver{"\n"}maintenant
+              </Text>
               <Text style={styles.serviceCardSubtitle}>
                 Faites venir un laveur chez vous immédiatement
               </Text>
             </TouchableOpacity>
 
             {/* Carte Programmer */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.serviceCard}
               activeOpacity={0.8}
-              onPress={() => router.push('/booking/schedule')}
+              onPress={() => router.push("/booking/schedule")}
             >
               <View style={styles.illustrationContainer}>
                 <Image
@@ -75,7 +82,9 @@ export default function HomeScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.serviceCardTitle}>Programmer un{'\n'}lavage</Text>
+              <Text style={styles.serviceCardTitle}>
+                Programmer un{"\n"}lavage
+              </Text>
               <Text style={styles.serviceCardSubtitle}>
                 Réservez un créneau qui vous convient
               </Text>
@@ -90,7 +99,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   scrollView: {
     flex: 1,
@@ -98,21 +107,21 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   greeting: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
   },
   content: {
     padding: 20,
     paddingTop: 10,
   },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
@@ -121,44 +130,44 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     flex: 1,
     fontSize: 16,
-    color: '#000000',
+    color: "#000000",
   },
   serviceCardsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 16,
   },
   serviceCard: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     borderRadius: 16,
     padding: 20,
     paddingTop: 24,
     paddingBottom: 24,
     minHeight: 280,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   illustrationContainer: {
-    width: '100%',
+    width: "100%",
     height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   illustration: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   serviceCardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginBottom: 8,
     lineHeight: 24,
   },
   serviceCardSubtitle: {
     fontSize: 13,
-    color: '#666666',
+    color: "#666666",
     lineHeight: 18,
   },
 });

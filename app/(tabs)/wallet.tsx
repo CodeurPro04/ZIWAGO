@@ -568,7 +568,7 @@ export default function WalletScreen() {
                 ))}
               </View>
 
-              {/* Sécurité */}
+              {/* Sécurité 
               <View style={styles.securityCard}>
                 <Shield size={24} color={Colors.primary} />
                 <View style={styles.securityInfo}>
@@ -577,7 +577,7 @@ export default function WalletScreen() {
                     Toutes vos transactions sont sécurisées et cryptées
                   </Text>
                 </View>
-              </View>
+              </View> */}
 
               <View style={{ height: Spacing.xl * 2 }} />
             </ScrollView>

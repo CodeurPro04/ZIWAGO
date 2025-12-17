@@ -360,7 +360,7 @@ export default function ActivityScreen() {
           )}
         </View>
 
-        {/* Impact écologique */}
+        {/* Impact écologique 
         <View style={styles.impactSection}>
           <View style={styles.impactCard}>
             <View style={styles.impactHeader}>
@@ -381,7 +381,7 @@ export default function ActivityScreen() {
               Votre contribution à l'environnement avec nos techniques écologiques
             </Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Export */}
         <TouchableOpacity style={styles.exportCard}>
