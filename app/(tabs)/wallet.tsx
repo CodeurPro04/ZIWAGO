@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -12,11 +12,12 @@ import {
   Animated,
   RefreshControl,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  ActivityIndicator
+  ActivityIndicator,
+  Image,
+  StatusBar
 } from 'react-native';
 import { 
   Wallet, 
@@ -47,12 +48,30 @@ import {
   Wifi as MoovIcon,
   RadioTower as MTNIcon,
   Eye,
-  EyeOff
+  EyeOff,
+  Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  ArrowRight,
+  MoreVertical,
+  Smartphone as SmartphoneIcon,
+  CreditCard as CreditCardIcon,
+  Globe,
+  Zap,
+  ChevronDown,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Bell,
+  Calendar
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
+
+// Données temporaires pour les icônes
+const Car = (props) => <Text style={{ fontSize: props.size || 20 }}>🚗</Text>;
 
 export default function WalletScreen() {
   const [balance, setBalance] = useState(28500);
@@ -65,33 +84,43 @@ export default function WalletScreen() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [balanceHidden, setBalanceHidden] = useState(false);
-  const fadeAnim = useState(new Animated.Value(0))[0];
+  const [activeTab, setActiveTab] = useState('all');
+  
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
-  // Méthodes de recharge
+  // Méthodes de recharge améliorées
   const paymentMethods = [
     {
       id: 1,
       name: 'Orange Money',
       icon: 'SmartphoneCharging',
       color: '#FF6B35',
+      gradient: ['#FF6B35', '#FF8B35'],
       type: 'mobile',
       number: '•••• 7845',
-      commission: '0.5%'
+      commission: '0.5%',
+      popular: true
     },
     {
       id: 2,
       name: 'MTN Money',
       icon: 'MTNIcon',
       color: '#FFCC00',
+      gradient: ['#FFCC00', '#FFD700'],
       type: 'mobile',
       number: '•••• 9231',
-      commission: '0.5%'
+      commission: '0.5%',
+      popular: true
     },
     {
       id: 3,
       name: 'Moov Money',
       icon: 'MoovIcon',
       color: '#00A859',
+      gradient: ['#00A859', '#00C851'],
       type: 'mobile',
       number: '•••• 4567',
       commission: '0.5%'
@@ -101,30 +130,69 @@ export default function WalletScreen() {
       name: 'Wave',
       icon: 'Wifi',
       color: '#2D5BFF',
+      gradient: ['#2D5BFF', '#4A6FFF'],
       type: 'mobile',
       number: '•••• 8910',
-      commission: '1%'
+      commission: '1%',
+      popular: true
     },
     {
       id: 5,
       name: 'Carte Bancaire',
       icon: 'CreditCard',
       color: '#3498DB',
+      gradient: ['#3498DB', '#5DADE2'],
       type: 'card',
       number: '•••• 4321',
-      commission: '1.5%'
+      commission: '1.5%',
+      secure: true
+    },
+    {
+      id: 6,
+      name: 'Visa/Mastercard',
+      icon: 'Globe',
+      color: '#8E44AD',
+      gradient: ['#8E44AD', '#9B59B6'],
+      type: 'card',
+      number: '•••• 5678',
+      commission: '2%',
+      secure: true
     }
+  ];
+
+  // Montants suggérés
+  const suggestedAmounts = [
+    { amount: 1000, label: '1K' },
+    { amount: 2000, label: '2K' },
+    { amount: 5000, label: '5K' },
+    { amount: 10000, label: '10K' },
+    { amount: 20000, label: '20K' },
+    { amount: 50000, label: '50K' },
   ];
 
   useEffect(() => {
     loadBalanceVisibility();
     generateMockTransactions();
     
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
+    // Animations d'entrée
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 60,
+        friction: 8,
+        useNativeDriver: true,
+      })
+    ]).start();
   }, []);
 
   const loadBalanceVisibility = async () => {
@@ -158,7 +226,8 @@ export default function WalletScreen() {
         date: 'Aujourd\'hui, 14:30',
         status: 'completed',
         icon: 'SmartphoneCharging',
-        color: '#FF6B35'
+        color: '#FF6B35',
+        category: 'recharge'
       },
       {
         id: 2,
@@ -168,7 +237,8 @@ export default function WalletScreen() {
         date: 'Hier, 10:15',
         status: 'completed',
         icon: 'Car',
-        color: Colors.primary
+        color: Colors.primary,
+        category: 'service'
       },
       {
         id: 3,
@@ -178,7 +248,8 @@ export default function WalletScreen() {
         date: '15 Mars, 09:45',
         status: 'completed',
         icon: 'MTNIcon',
-        color: '#FFCC00'
+        color: '#FFCC00',
+        category: 'recharge'
       },
       {
         id: 4,
@@ -188,7 +259,8 @@ export default function WalletScreen() {
         date: '12 Mars, 16:20',
         status: 'completed',
         icon: 'clean',
-        color: Colors.primary
+        color: Colors.primary,
+        category: 'service'
       },
       {
         id: 5,
@@ -198,7 +270,8 @@ export default function WalletScreen() {
         date: '10 Mars, 11:30',
         status: 'failed',
         icon: 'Car',
-        color: '#E74C3C'
+        color: '#E74C3C',
+        category: 'service'
       },
       {
         id: 6,
@@ -208,7 +281,19 @@ export default function WalletScreen() {
         date: '8 Mars, 14:00',
         status: 'completed',
         icon: 'CreditCard',
-        color: '#3498DB'
+        color: '#3498DB',
+        category: 'recharge'
+      },
+      {
+        id: 7,
+        type: 'credit',
+        amount: 15000,
+        description: 'Parrainage - Référence',
+        date: '5 Mars, 09:00',
+        status: 'completed',
+        icon: 'Gift',
+        color: '#8E44AD',
+        category: 'bonus'
       }
     ];
     setTransactions(mockTransactions);
@@ -231,13 +316,13 @@ export default function WalletScreen() {
 
   const handleRecharge = () => {
     if (!rechargeAmount || isNaN(rechargeAmount) || parseInt(rechargeAmount) <= 0) {
-      Alert.alert('Erreur', 'Veuillez entrer un montant valide');
+      Alert.alert('Montant invalide', 'Veuillez entrer un montant valide');
       return;
     }
 
     const amount = parseInt(rechargeAmount);
     const commission = selectedMethod ? 
-      (amount * parseFloat(selectedMethod.commission) / 100) : 0;
+      (amount * parseFloat(selectedMethod.commission.replace('%', '')) / 100) : 0;
     const total = amount - commission;
     
     setIsLoading(true);
@@ -249,11 +334,12 @@ export default function WalletScreen() {
         id: transactions.length + 1,
         type: 'credit',
         amount: total,
-        description: `Recharge ${selectedMethod?.name || ''}`,
+        description: `Recharge ${selectedMethod?.name}`,
         date: 'Maintenant',
         status: 'completed',
         icon: selectedMethod?.icon || 'CreditCard',
-        color: selectedMethod?.color || '#3498DB'
+        color: selectedMethod?.color || '#3498DB',
+        category: 'recharge'
       };
       
       setTransactions([newTransaction, ...transactions]);
@@ -263,22 +349,23 @@ export default function WalletScreen() {
       setIsLoading(false);
       
       Alert.alert(
-        'Succès', 
-        `Recharge effectuée !\nMontant: ${amount.toLocaleString()} F CFA\nCommission: ${commission.toLocaleString()} F CFA\nSolde crédité: ${total.toLocaleString()} F CFA`
+        '✅ Recharge réussie', 
+        `Montant: ${amount.toLocaleString()} F CFA\nCommission: ${commission.toLocaleString()} F CFA\nSolde crédité: ${total.toLocaleString()} F CFA`,
+        [{ text: 'OK', style: 'default' }]
       );
     }, 2000);
   };
 
   const handleWithdraw = () => {
     if (!withdrawAmount || isNaN(withdrawAmount) || parseInt(withdrawAmount) <= 0) {
-      Alert.alert('Erreur', 'Veuillez entrer un montant valide');
+      Alert.alert('Montant invalide', 'Veuillez entrer un montant valide');
       return;
     }
 
     const amount = parseInt(withdrawAmount);
     
     if (amount > balance) {
-      Alert.alert('Erreur', 'Solde insuffisant');
+      Alert.alert('Solde insuffisant', 'Votre solde actuel ne permet pas ce retrait');
       return;
     }
 
@@ -295,7 +382,8 @@ export default function WalletScreen() {
         date: 'Maintenant',
         status: 'pending',
         icon: 'bank',
-        color: '#E74C3C'
+        color: '#E74C3C',
+        category: 'withdrawal'
       };
       
       setTransactions([newTransaction, ...transactions]);
@@ -303,7 +391,11 @@ export default function WalletScreen() {
       setShowWithdrawModal(false);
       setIsLoading(false);
       
-      Alert.alert('Demande envoyée', 'Votre retrait sera traité dans les 24h');
+      Alert.alert(
+        '⏳ Demande envoyée', 
+        'Votre retrait sera traité dans les 24 heures',
+        [{ text: 'OK', style: 'default' }]
+      );
     }, 1500);
   };
 
@@ -312,23 +404,24 @@ export default function WalletScreen() {
       case 'SmartphoneCharging': return <SmartphoneCharging size={size} color={color} />;
       case 'CreditCard': return <CreditCard size={size} color={color} />;
       case 'Gift': return <Gift size={size} color={color} />;
-      case 'Car': return <Car size={size} color={color} />;
-      case 'clean': return <Shield size={size} color={color} />;
+      case 'Car': return <Car size={size} />;
+      case 'clean': return <Sparkles size={size} color={color} />;
       case 'Wifi': return <Wifi size={size} color={color} />;
       case 'MoovIcon': return <MoovIcon size={size} color={color} />;
       case 'MTNIcon': return <MTNIcon size={size} color={color} />;
       case 'bank': return <Banknote size={size} color={color} />;
       case 'plus': return <Plus size={size} color={color} />;
+      case 'Globe': return <Globe size={size} color={color} />;
       default: return <Wallet size={size} color={color} />;
     }
   };
 
   const getStatusIcon = (status) => {
     switch(status) {
-      case 'completed': return <CheckCircle size={16} color="#2ECC71" />;
-      case 'pending': return <Clock size={16} color="#F39C12" />;
-      case 'failed': return <XCircle size={16} color="#E74C3C" />;
-      default: return <AlertCircle size={16} color="#95A5A6" />;
+      case 'completed': return <CheckCircle size={14} color="#2ECC71" />;
+      case 'pending': return <Clock size={14} color="#F39C12" />;
+      case 'failed': return <XCircle size={14} color="#E74C3C" />;
+      default: return <AlertCircle size={14} color="#95A5A6" />;
     }
   };
 
@@ -341,14 +434,9 @@ export default function WalletScreen() {
       return (
         <View style={styles.hiddenBalanceContainer}>
           <View style={styles.hiddenBalanceDots}>
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
-            <View style={styles.balanceDot} />
+            {[...Array(8)].map((_, i) => (
+              <View key={i} style={styles.balanceDot} />
+            ))}
           </View>
           <Text style={styles.hiddenBalanceText}>F CFA</Text>
         </View>
@@ -359,474 +447,583 @@ export default function WalletScreen() {
     );
   };
 
+  const filteredTransactions = transactions.filter(transaction => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'recharge') return transaction.type === 'credit';
+    if (activeTab === 'depense') return transaction.type === 'debit';
+    return true;
+  });
+
   const renderPaymentMethods = () => (
-    <View style={styles.paymentMethodsGrid}>
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      style={styles.paymentMethodsScroll}
+      contentContainerStyle={styles.paymentMethodsContent}
+    >
       {paymentMethods.map((method) => (
         <TouchableOpacity
           key={method.id}
           style={styles.paymentMethodCard}
           onPress={() => handleMethodSelection(method)}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <View style={[styles.methodIconContainer, { backgroundColor: method.color + '20' }]}>
-            {getIconComponent(method.icon, method.color, 24)}
-          </View>
+          <LinearGradient
+            colors={method.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.methodIconContainer}
+          >
+            {getIconComponent(method.icon, 'white', 22)}
+          </LinearGradient>
           <Text style={styles.methodName} numberOfLines={1}>{method.name}</Text>
-          <Text style={styles.methodCommission}>{method.commission} commission</Text>
+          {method.popular && (
+            <View style={styles.popularBadge}>
+              <TrendingUp size={10} color="#FFF" />
+              <Text style={styles.popularText}>Populaire</Text>
+            </View>
+          )}
+          {method.secure && (
+            <View style={styles.secureBadge}>
+              <ShieldCheck size={10} color="#FFF" />
+            </View>
+          )}
         </TouchableOpacity>
       ))}
-    </View>
+    </ScrollView>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={styles.headerContent}>
-                <View style={styles.titleContainer}>
-                  <Wallet size={28} color={Colors.primary} />
-                  <Text style={styles.title}>Portefeuille</Text>
-                </View>
-                <TouchableOpacity 
-                  style={styles.historyButton}
-                  onPress={() => Alert.alert('Historique complet', 'Fonctionnalité à venir')}
-                >
-                  <History size={22} color={Colors.textSecondary} />
-                </TouchableOpacity>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+      
+      <Animated.View style={[styles.animatedContainer, { 
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }, { scale: scaleAnim }]
+      }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <View style={styles.walletIconContainer}>
+                <Wallet size={24} color={Colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.headerTitle}>Portefeuille</Text>
+                <Text style={styles.headerSubtitle}>Gérez votre argent</Text>
               </View>
             </View>
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={() => Alert.alert('Notifications', 'Fonctionnalité à venir')}
+              >
+                <Bell size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={() => Alert.alert('Historique', 'Fonctionnalité à venir')}
+              >
+                <History size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
 
-            <ScrollView 
-              style={styles.content}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={[Colors.primary]}
-                  tintColor={Colors.primary}
-                />
-              }
-            >
-              {/* Carte Solde */}
-              <View style={styles.balanceCard}>
-                <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceLabel}>Solde disponible</Text>
-                  <View style={styles.balanceHeaderActions}>
-                    <TouchableOpacity 
-                      onPress={toggleBalanceVisibility}
-                      style={styles.visibilityButton}
-                    >
-                      {balanceHidden ? (
-                        <EyeOff size={18} color={Colors.textSecondary} />
-                      ) : (
-                        <Eye size={18} color={Colors.textSecondary} />
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      onPress={() => Alert.alert('ID Copié', 'Votre ID a été copié')}
-                      style={styles.copyButton}
-                    >
-                      <Copy size={16} color={Colors.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                
-                {renderBalance()}
-                
-                <View style={styles.balanceStats}>
-                  <View style={styles.statItem}>
-                    <ArrowDownLeft size={16} color="#2ECC71" />
-                    <Text style={[styles.statText, styles.statPositive]}>
-                      {balanceHidden ? '••••' : '+65,400 F'}
-                    </Text>
-                    <Text style={styles.statLabel}>Ce mois</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statItem}>
-                    <ArrowUpRight size={16} color="#E74C3C" />
-                    <Text style={[styles.statText, styles.statNegative]}>
-                      {balanceHidden ? '••••' : '-28,500 F'}
-                    </Text>
-                    <Text style={styles.statLabel}>Dépenses</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Actions rapides */}
-              <View style={styles.quickActions}>
-                <TouchableOpacity 
-                  style={styles.quickAction}
-                  onPress={() => setShowRechargeModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.actionIcon, { backgroundColor: '#2ECC71' }]}>
-                    <Plus size={24} color="white" />
-                  </View>
-                  <Text style={styles.actionText}>Recharger</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.quickAction}
-                  onPress={() => setShowWithdrawModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.actionIcon, { backgroundColor: '#3498DB' }]}>
-                    <Send size={24} color="white" />
-                  </View>
-                  <Text style={styles.actionText}>Envoyer</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.quickAction}
-                  onPress={() => Alert.alert('QR Code', 'Fonctionnalité à venir')}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.actionIcon, { backgroundColor: '#8E44AD' }]}>
-                    <QrCode size={24} color="white" />
-                  </View>
-                  <Text style={styles.actionText}>QR Code</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Méthodes de recharge */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Méthodes de recharge</Text>
-                {renderPaymentMethods()}
-              </View>
-
-              {/* Statistiques */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Statistiques du mois</Text>
-                <View style={styles.statsGrid}>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statCardValue}>{transactions.length}</Text>
-                    <Text style={styles.statCardLabel}>Transactions</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statCardValue}>
-                      {balanceHidden ? '••••' : '65,400 F'}
-                    </Text>
-                    <Text style={styles.statCardLabel}>Recharges</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statCardValue}>
-                      {balanceHidden ? '••••' : '28,500 F'}
-                    </Text>
-                    <Text style={styles.statCardLabel}>Dépenses</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Transactions récentes */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Transactions récentes</Text>
-                  <TouchableOpacity>
-                    <Text style={styles.seeAllText}>Tout voir</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {transactions.map((transaction) => (
+        <ScrollView 
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+              progressBackgroundColor="#FFF"
+            />
+          }
+        >
+          {/* Carte Solde */}
+          <LinearGradient
+            colors={['#4A6FFF', '#2D5BFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.balanceCard}
+          >
+            <View style={styles.balanceCardContent}>
+              <View style={styles.balanceHeader}>
+                <Text style={styles.balanceLabel}>Solde disponible</Text>
+                <View style={styles.balanceActions}>
                   <TouchableOpacity 
-                    key={transaction.id}
-                    style={styles.transactionItem}
-                    activeOpacity={0.7}
-                    onPress={() => Alert.alert('Détails', transaction.description)}
+                    onPress={toggleBalanceVisibility}
+                    style={styles.visibilityButton}
                   >
-                    <View style={[styles.transactionIcon, { backgroundColor: transaction.color }]}>
-                      {getIconComponent(transaction.icon)}
-                    </View>
-                    
-                    <View style={styles.transactionInfo}>
-                      <Text style={styles.transactionDescription} numberOfLines={1}>
-                        {transaction.description}
-                      </Text>
-                      <View style={styles.transactionMeta}>
-                        {getStatusIcon(transaction.status)}
-                        <Text style={styles.transactionDate}>{transaction.date}</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.transactionAmountContainer}>
-                      <Text style={[
-                        styles.transactionAmount,
-                        transaction.type === 'credit' ? styles.creditAmount : styles.debitAmount
-                      ]}>
-                        {transaction.type === 'credit' ? '+' : '-'} 
-                        {balanceHidden ? ' ••••' : ` ${formatAmount(transaction.amount)}`}
-                      </Text>
-                      <ChevronRight size={16} color={Colors.textSecondary} />
-                    </View>
+                    {balanceHidden ? (
+                      <EyeOff size={20} color="rgba(255,255,255,0.8)" />
+                    ) : (
+                      <Eye size={20} color="rgba(255,255,255,0.8)" />
+                    )}
                   </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Sécurité 
-              <View style={styles.securityCard}>
-                <Shield size={24} color={Colors.primary} />
-                <View style={styles.securityInfo}>
-                  <Text style={styles.securityTitle}>Protection Ziwago</Text>
-                  <Text style={styles.securityText}>
-                    Toutes vos transactions sont sécurisées et cryptées
-                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => Alert.alert('ID Copié', 'Votre ID a été copié dans le presse-papier')}
+                    style={styles.copyButton}
+                  >
+                    <Copy size={18} color="rgba(255,255,255,0.8)" />
+                  </TouchableOpacity>
                 </View>
-              </View> */}
+              </View>
+              
+              <View style={styles.balanceAmountContainer}>
+                {renderBalance()}
+                <View style={styles.balanceTrend}>
+                  <ArrowUpRight size={16} color="#2ECC71" />
+                  <Text style={styles.balanceTrendText}>+12% ce mois</Text>
+                </View>
+              </View>
+              
+              <View style={styles.balanceStats}>
+                <View style={styles.statItem}>
+                  <ArrowDownCircle size={18} color="#FFF" />
+                  <Text style={styles.statValue}>{balanceHidden ? '••••' : '65,400 F'}</Text>
+                  <Text style={styles.statLabel}>Recharges</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <ArrowUpCircle size={18} color="#FFF" />
+                  <Text style={styles.statValue}>{balanceHidden ? '••••' : '28,500 F'}</Text>
+                  <Text style={styles.statLabel}>Dépenses</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
 
-              <View style={{ height: Spacing.xl * 2 }} />
+          {/* Actions rapides */}
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.sectionTitle}>Actions rapides</Text>
+            <View style={styles.quickActions}>
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={() => setShowRechargeModal(true)}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={['#2ECC71', '#27AE60']}
+                  style={styles.quickActionGradient}
+                >
+                  <Plus size={24} color="white" />
+                </LinearGradient>
+                <Text style={styles.quickActionText}>Recharger</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={() => setShowWithdrawModal(true)}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={['#3498DB', '#2980B9']}
+                  style={styles.quickActionGradient}
+                >
+                  <Send size={24} color="white" />
+                </LinearGradient>
+                <Text style={styles.quickActionText}>Retirer</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={() => Alert.alert('QR Code', 'Scanner pour recevoir un paiement')}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={['#8E44AD', '#732D91']}
+                  style={styles.quickActionGradient}
+                >
+                  <QrCode size={24} color="white" />
+                </LinearGradient>
+                <Text style={styles.quickActionText}>Recevoir</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={() => Alert.alert('Transfert', 'Transférer de l\'argent à un contact')}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={['#FF6B35', '#E55A28']}
+                  style={styles.quickActionGradient}
+                >
+                  <ArrowRight size={24} color="white" />
+                </LinearGradient>
+                <Text style={styles.quickActionText}>Transférer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Méthodes de recharge */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recharger avec</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>Voir tout</Text>
+              </TouchableOpacity>
+            </View>
+            {renderPaymentMethods()}
+          </View>
+
+          {/* Statistiques du mois */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ce mois-ci</Text>
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: '#4A6FFF20' }]}>
+                  <TrendingUp size={20} color="#4A6FFF" />
+                </View>
+                <Text style={styles.statCardValue}>{transactions.length}</Text>
+                <Text style={styles.statCardLabel}>Transactions</Text>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: '#2ECC7120' }]}>
+                  <ArrowDownCircle size={20} color="#2ECC71" />
+                </View>
+                <Text style={styles.statCardValue}>
+                  {balanceHidden ? '••••' : '65,400 F'}
+                </Text>
+                <Text style={styles.statCardLabel}>Recharges</Text>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: '#E74C3C20' }]}>
+                  <ArrowUpCircle size={20} color="#E74C3C" />
+                </View>
+                <Text style={styles.statCardValue}>
+                  {balanceHidden ? '••••' : '28,500 F'}
+                </Text>
+                <Text style={styles.statCardLabel}>Dépenses</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Transactions */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Transactions récentes</Text>
+              <TouchableOpacity style={styles.filterButton}>
+                <Calendar size={18} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Tabs de filtrage */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.tabsContainer}
+              contentContainerStyle={styles.tabsContent}
+            >
+              {['all', 'recharge', 'depense'].map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.tab, activeTab === tab && styles.tabActive]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                    {tab === 'all' ? 'Toutes' : tab === 'recharge' ? 'Recharges' : 'Dépenses'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
-
-            {/* Modal Recharge */}
-            <Modal
-              visible={showRechargeModal}
-              animationType="slide"
-              transparent={true}
-              onRequestClose={() => {
-                setShowRechargeModal(false);
-                setSelectedMethod(null);
-              }}
-            >
-              <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.modalKeyboardAvoid}
+            
+            {filteredTransactions.map((transaction) => (
+              <TouchableOpacity 
+                key={transaction.id}
+                style={styles.transactionCard}
+                activeOpacity={0.7}
+                onPress={() => Alert.alert('Détails de la transaction', transaction.description)}
               >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                  <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                      <View style={styles.modalHeader}>
-                        <View style={styles.modalTitleContainer}>
-                          {selectedMethod && (
-                            <View style={[styles.selectedMethodIcon, { backgroundColor: selectedMethod.color + '20' }]}>
-                              {getIconComponent(selectedMethod.icon, selectedMethod.color, 20)}
-                            </View>
-                          )}
-                          <Text style={styles.modalTitle}>
-                            {selectedMethod ? `Recharger avec ${selectedMethod.name}` : 'Choisir un montant'}
-                          </Text>
-                        </View>
-                        <TouchableOpacity 
-                          onPress={() => {
-                            setShowRechargeModal(false);
-                            setSelectedMethod(null);
-                          }}
-                          style={styles.closeButton}
-                        >
-                          <X size={24} color={Colors.textSecondary} />
-                        </TouchableOpacity>
-                      </View>
-                      
-                      {selectedMethod ? (
-                        <>
-                          <Text style={styles.modalSubtitle}>Montant à recharger (F CFA)</Text>
-                          
-                          <View style={styles.amountInputContainer}>
-                            <TextInput
-                              style={styles.amountInput}
-                              value={rechargeAmount}
-                              onChangeText={setRechargeAmount}
-                              placeholder="0"
-                              keyboardType="numeric"
-                              placeholderTextColor={Colors.textSecondary}
-                              autoFocus={true}
-                            />
-                            <Text style={styles.currencyText}>F CFA</Text>
-                          </View>
-                          
-                          <View style={styles.quickAmounts}>
-                            {[1000, 2000, 5000, 10000, 20000, 50000].map((amount) => (
-                              <TouchableOpacity
-                                key={amount}
-                                style={styles.quickAmountButton}
-                                onPress={() => setRechargeAmount(amount.toString())}
-                              >
-                                <Text style={styles.quickAmountText}>{amount.toLocaleString()}</Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                          
-                          <View style={styles.commissionInfo}>
-                            <Text style={styles.commissionText}>
-                              Commission: {selectedMethod.commission} (min 50 F CFA)
-                            </Text>
-                          </View>
-                          
-                          <TouchableOpacity 
-                            style={[styles.modalButton, isLoading && styles.modalButtonDisabled]}
-                            onPress={handleRecharge}
-                            disabled={isLoading || !rechargeAmount}
-                          >
-                            {isLoading ? (
-                              <ActivityIndicator color="white" />
-                            ) : (
-                              <Text style={styles.modalButtonText}>
-                                {rechargeAmount ? 
-                                  `Recharger ${parseInt(rechargeAmount).toLocaleString()} F CFA` : 
-                                  'Entrez un montant'
-                                }
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                          
-                          <TouchableOpacity 
-                            style={styles.changeMethodButton}
-                            onPress={() => setSelectedMethod(null)}
-                          >
-                            <Text style={styles.changeMethodText}>Changer de méthode</Text>
-                          </TouchableOpacity>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.modalSubtitle}>Choisissez votre méthode de paiement</Text>
-                          {renderPaymentMethods()}
-                        </>
-                      )}
-                    </View>
+                <View style={[styles.transactionIconContainer, { backgroundColor: transaction.color + '20' }]}>
+                  {getIconComponent(transaction.icon, transaction.color, 20)}
+                </View>
+                
+                <View style={styles.transactionInfo}>
+                  <Text style={styles.transactionDescription} numberOfLines={1}>
+                    {transaction.description}
+                  </Text>
+                  <View style={styles.transactionMeta}>
+                    {getStatusIcon(transaction.status)}
+                    <Text style={styles.transactionDate}>{transaction.date}</Text>
                   </View>
-                </TouchableWithoutFeedback>
-              </KeyboardAvoidingView>
-            </Modal>
+                </View>
+                
+                <View style={styles.transactionAmountContainer}>
+                  <Text style={[
+                    styles.transactionAmount,
+                    transaction.type === 'credit' ? styles.creditAmount : styles.debitAmount
+                  ]}>
+                    {transaction.type === 'credit' ? '+' : '-'} 
+                    {balanceHidden ? ' ••••' : ` ${transaction.amount.toLocaleString()} F`}
+                  </Text>
+                  <ChevronRight size={18} color={Colors.textSecondary} />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-            {/* Modal Retrait */}
-            <Modal
-              visible={showWithdrawModal}
-              animationType="slide"
-              transparent={true}
-              onRequestClose={() => setShowWithdrawModal(false)}
-            >
-              <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.modalKeyboardAvoid}
+          {/* Section sécurité */}
+          <View style={styles.securitySection}>
+            <View style={styles.securityCard}>
+              <View style={styles.securityIconContainer}>
+                <ShieldCheck size={24} color={Colors.primary} />
+              </View>
+              <View style={styles.securityInfo}>
+                <Text style={styles.securityTitle}>Protection maximale</Text>
+                <Text style={styles.securityText}>
+                  Toutes vos transactions sont cryptées et sécurisées
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={{ height: Spacing.xl * 2 }} />
+        </ScrollView>
+
+        {/* Modal Recharge */}
+        <Modal
+          visible={showRechargeModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setShowRechargeModal(false);
+            setSelectedMethod(null);
+          }}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <Animated.View 
+                style={styles.modalContent}
+                entering={Platform.OS === 'ios' ? undefined : undefined}
               >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                  <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                      <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Retirer des fonds</Text>
-                        <TouchableOpacity 
-                          onPress={() => setShowWithdrawModal(false)}
-                          style={styles.closeButton}
+                <LinearGradient
+                  colors={['#FFF', '#F8F9FF']}
+                  style={styles.modalGradient}
+                >
+                  <View style={styles.modalHeader}>
+                    <View style={styles.modalTitleContainer}>
+                      {selectedMethod && (
+                        <LinearGradient
+                          colors={selectedMethod.gradient}
+                          style={styles.selectedMethodIcon}
                         >
-                          <X size={24} color={Colors.textSecondary} />
-                        </TouchableOpacity>
+                          {getIconComponent(selectedMethod.icon, 'white', 22)}
+                        </LinearGradient>
+                      )}
+                      <View>
+                        <Text style={styles.modalTitle}>
+                          {selectedMethod ? `Recharger avec ${selectedMethod.name}` : 'Choisir un montant'}
+                        </Text>
+                        <Text style={styles.modalSubtitle}>
+                          {selectedMethod ? `Commission: ${selectedMethod.commission}` : 'Sélectionnez votre méthode'}
+                        </Text>
                       </View>
-                      
-                      <Text style={styles.modalSubtitle}>Montant à retirer (F CFA)</Text>
+                    </View>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        setShowRechargeModal(false);
+                        setSelectedMethod(null);
+                      }}
+                      style={styles.closeButton}
+                    >
+                      <X size={24} color={Colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {selectedMethod ? (
+                    <>
+                      <Text style={styles.amountLabel}>Montant (F CFA)</Text>
                       
                       <View style={styles.amountInputContainer}>
+                        <Text style={styles.currencySymbol}>F</Text>
                         <TextInput
                           style={styles.amountInput}
-                          value={withdrawAmount}
-                          onChangeText={setWithdrawAmount}
+                          value={rechargeAmount}
+                          onChangeText={setRechargeAmount}
                           placeholder="0"
                           keyboardType="numeric"
-                          placeholderTextColor={Colors.textSecondary}
+                          placeholderTextColor={Colors.textSecondary + '80'}
                           autoFocus={true}
+                          selectionColor={Colors.primary}
                         />
-                        <Text style={styles.currencyText}>F CFA</Text>
+                        <Text style={styles.currencyText}>CFA</Text>
                       </View>
                       
-                      <Text style={styles.balanceInfo}>
-                        Solde disponible : {balanceHidden ? '••••••••' : formatAmount(balance)}
-                      </Text>
-                      
-                      <View style={styles.quickAmounts}>
-                        {[5000, 10000, 20000, 50000, 100000].map((amount) => (
+                      <Text style={styles.quickAmountsLabel}>Montants rapides</Text>
+                      <View style={styles.quickAmountsGrid}>
+                        {suggestedAmounts.map((item) => (
                           <TouchableOpacity
-                            key={amount}
+                            key={item.amount}
                             style={[
                               styles.quickAmountButton,
-                              amount > balance && styles.disabledAmountButton
+                              rechargeAmount === item.amount.toString() && styles.quickAmountButtonActive
                             ]}
-                            onPress={() => amount <= balance && setWithdrawAmount(amount.toString())}
-                            disabled={amount > balance}
+                            onPress={() => setRechargeAmount(item.amount.toString())}
                           >
                             <Text style={[
                               styles.quickAmountText,
-                              amount > balance && styles.disabledAmountText
+                              rechargeAmount === item.amount.toString() && styles.quickAmountTextActive
                             ]}>
-                              {amount.toLocaleString()}
+                              {item.label}
                             </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                       
+                      <View style={styles.summaryCard}>
+                        <View style={styles.summaryRow}>
+                          <Text style={styles.summaryLabel}>Montant</Text>
+                          <Text style={styles.summaryValue}>
+                            {rechargeAmount ? `${parseInt(rechargeAmount).toLocaleString()} F CFA` : '0 F CFA'}
+                          </Text>
+                        </View>
+                        <View style={styles.summaryRow}>
+                          <Text style={styles.summaryLabel}>Commission</Text>
+                          <Text style={styles.summaryValue}>
+                            {rechargeAmount ? `${(parseInt(rechargeAmount) * 0.005).toFixed(0)} F CFA` : '0 F CFA'}
+                          </Text>
+                        </View>
+                        <View style={[styles.summaryRow, styles.summaryTotal]}>
+                          <Text style={styles.summaryTotalLabel}>Total crédité</Text>
+                          <Text style={styles.summaryTotalValue}>
+                            {rechargeAmount ? `${(parseInt(rechargeAmount) * 0.995).toFixed(0)} F CFA` : '0 F CFA'}
+                          </Text>
+                        </View>
+                      </View>
+                      
                       <TouchableOpacity 
-                        style={[
-                          styles.modalButton, 
-                          (isLoading || !withdrawAmount || parseInt(withdrawAmount) > balance) && styles.modalButtonDisabled
-                        ]}
-                        onPress={handleWithdraw}
-                        disabled={isLoading || !withdrawAmount || parseInt(withdrawAmount) > balance}
+                        style={[styles.modalButton, (isLoading || !rechargeAmount) && styles.modalButtonDisabled]}
+                        onPress={handleRecharge}
+                        disabled={isLoading || !rechargeAmount}
                       >
                         {isLoading ? (
                           <ActivityIndicator color="white" />
                         ) : (
-                          <Text style={styles.modalButtonText}>
-                            {withdrawAmount ? 
-                              `Retirer ${parseInt(withdrawAmount).toLocaleString()} F CFA` : 
-                              'Entrez un montant'
-                            }
-                          </Text>
+                          <>
+                            <Text style={styles.modalButtonText}>
+                              Recharger {rechargeAmount ? `${parseInt(rechargeAmount).toLocaleString()} F CFA` : ''}
+                            </Text>
+                            <ArrowRight size={20} color="white" />
+                          </>
                         )}
                       </TouchableOpacity>
-                    </View>
-                  </View>
-                </TouchableWithoutFeedback>
-              </KeyboardAvoidingView>
-            </Modal>
-          </Animated.View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+                      
+                      {selectedMethod && (
+                        <TouchableOpacity 
+                          style={styles.changeMethodButton}
+                          onPress={() => setSelectedMethod(null)}
+                        >
+                          <Text style={styles.changeMethodText}>Changer de méthode</Text>
+                          <ChevronDown size={16} color={Colors.primary} />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  ) : (
+                    <ScrollView style={styles.methodsScroll}>
+                      <Text style={styles.modalSubtitle}>Choisissez votre méthode de paiement</Text>
+                      {paymentMethods.map((method) => (
+                        <TouchableOpacity
+                          key={method.id}
+                          style={styles.methodOption}
+                          onPress={() => handleMethodSelection(method)}
+                        >
+                          <LinearGradient
+                            colors={method.gradient}
+                            style={styles.methodOptionIcon}
+                          >
+                            {getIconComponent(method.icon, 'white', 20)}
+                          </LinearGradient>
+                          <View style={styles.methodOptionInfo}>
+                            <Text style={styles.methodOptionName}>{method.name}</Text>
+                            <Text style={styles.methodOptionDetails}>
+                              {method.number} • Commission {method.commission}
+                            </Text>
+                          </View>
+                          {method.popular && (
+                            <View style={styles.optionPopularBadge}>
+                              <Text style={styles.optionPopularText}>Populaire</Text>
+                            </View>
+                          )}
+                          <ChevronRight size={20} color={Colors.textSecondary} />
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+                </LinearGradient>
+              </Animated.View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </Animated.View>
     </SafeAreaView>
   );
 }
-
-// Composants temporaires
-const Car = (props) => <Text style={{ fontSize: props.size || 20 }}>🚗</Text>;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
-  keyboardAvoid: {
-    flex: 1,
-  },
   animatedContainer: {
     flex: 1,
   },
   header: {
+    backgroundColor: '#FFF',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border + '30',
-    backgroundColor: 'white',
+    borderBottomColor: Colors.border + '20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  titleContainer: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
-  title: {
-    fontSize: 28,
+  walletIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: Colors.text,
     fontFamily: Typography.primaryBold,
   },
-  historyButton: {
-    padding: Spacing.sm,
+  headerSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontFamily: Typography.primary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
@@ -835,24 +1032,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.xl,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text,
+    fontFamily: Typography.primaryBold,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
+    fontFamily: Typography.primarySemiBold,
+  },
   balanceCard: {
-    backgroundColor: 'white',
     margin: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
+    shadowColor: '#4A6FFF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  balanceCardContent: {
     padding: Spacing.xl,
-    borderRadius: BorderRadius.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
   },
   balanceHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  balanceHeaderActions: {
+  balanceLabel: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: Typography.primary,
+  },
+  balanceActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
@@ -863,22 +1085,19 @@ const styles = StyleSheet.create({
   copyButton: {
     padding: Spacing.xs,
   },
-  balanceLabel: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontFamily: Typography.primary,
+  balanceAmountContainer: {
+    marginBottom: Spacing.lg,
   },
   balanceAmount: {
-    fontSize: width < 375 ? 32 : 40,
+    fontSize: width < 375 ? 36 : 44,
     fontWeight: 'bold',
-    color: Colors.text,
-    marginBottom: Spacing.lg,
+    color: '#FFF',
     fontFamily: Typography.primaryBold,
+    marginBottom: Spacing.xs,
   },
   hiddenBalanceContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: Spacing.lg,
   },
   hiddenBalanceDots: {
     flexDirection: 'row',
@@ -886,17 +1105,28 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   balanceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.text,
-    marginHorizontal: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFF',
+    marginHorizontal: 3,
   },
   hiddenBalanceText: {
-    fontSize: width < 375 ? 28 : 36,
+    fontSize: width < 375 ? 32 : 40,
     fontWeight: 'bold',
-    color: Colors.textSecondary,
+    color: 'rgba(255,255,255,0.7)',
     fontFamily: Typography.primaryBold,
+  },
+  balanceTrend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  balanceTrendText: {
+    fontSize: 14,
+    color: '#2ECC71',
+    fontWeight: '500',
+    fontFamily: Typography.primaryMedium,
   },
   balanceStats: {
     flexDirection: 'row',
@@ -904,117 +1134,113 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: Colors.border + '30',
+    borderTopColor: 'rgba(255,255,255,0.2)',
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
-  statText: {
-    fontSize: 14,
-    fontWeight: '600',
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
     marginTop: Spacing.xs,
-    fontFamily: Typography.primarySemiBold,
-  },
-  statPositive: {
-    color: '#2ECC71',
-  },
-  statNegative: {
-    color: '#E74C3C',
+    fontFamily: Typography.primaryBold,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
     fontFamily: Typography.primary,
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: Colors.border + '30',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  quickActionsSection: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   quickActions: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
     gap: Spacing.md,
   },
-  quickAction: {
+  quickActionCard: {
     flex: 1,
     alignItems: 'center',
-    minWidth: 70,
   },
-  actionIcon: {
-    width: width < 375 ? 48 : 56,
-    height: width < 375 ? 48 : 56,
-    borderRadius: width < 375 ? 24 : 28,
+  quickActionGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
-  actionText: {
+  quickActionText: {
     fontSize: 12,
-    color: Colors.text,
     fontWeight: '500',
+    color: Colors.text,
     textAlign: 'center',
     fontFamily: Typography.primaryMedium,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.text,
-    marginBottom: Spacing.md,
-    fontFamily: Typography.primaryBold,
+  paymentMethodsScroll: {
+    marginHorizontal: -Spacing.lg,
+    paddingLeft: Spacing.lg,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: Colors.primary,
-    fontWeight: '500',
-    fontFamily: Typography.primaryMedium,
-  },
-  paymentMethodsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    justifyContent: 'space-between',
+  paymentMethodsContent: {
+    paddingRight: Spacing.lg,
   },
   paymentMethodCard: {
-    width: (width - Spacing.lg * 2 - Spacing.md) / 2.5,
-    backgroundColor: 'white',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+    width: 100,
+    marginRight: Spacing.md,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border + '20',
-    marginBottom: Spacing.sm,
+    position: 'relative',
   },
   methodIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
   methodName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: Colors.text,
     textAlign: 'center',
-    marginBottom: 4,
     fontFamily: Typography.primaryMedium,
   },
-  methodCommission: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    fontFamily: Typography.primary,
+  popularBadge: {
+    position: 'absolute',
+    top: -4,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 2,
+  },
+  popularText: {
+    fontSize: 9,
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontFamily: Typography.primaryBold,
+  },
+  secureBadge: {
+    position: 'absolute',
+    top: -4,
+    right: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#3498DB',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1022,16 +1248,28 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
     padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border + '30',
-    minHeight: 80,
+    borderColor: Colors.border + '20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
   },
   statCardValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: Colors.text,
     marginBottom: Spacing.xs,
@@ -1043,20 +1281,50 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: Typography.primary,
   },
-  transactionItem: {
+  tabsContainer: {
+    marginBottom: Spacing.md,
+  },
+  tabsContent: {
+    paddingRight: Spacing.lg,
+  },
+  tab: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    marginRight: Spacing.sm,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+  },
+  tabActive: {
+    backgroundColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    fontFamily: Typography.primaryMedium,
+  },
+  tabTextActive: {
+    color: '#FFF',
+  },
+  transactionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
     padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     marginBottom: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border + '20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  transactionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
@@ -1066,7 +1334,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   transactionDescription: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: Colors.text,
     marginBottom: Spacing.xs,
@@ -1078,7 +1346,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   transactionDate: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
     fontFamily: Typography.primary,
   },
@@ -1088,7 +1356,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   transactionAmount: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: Typography.primarySemiBold,
   },
@@ -1098,17 +1366,27 @@ const styles = StyleSheet.create({
   debitAmount: {
     color: '#E74C3C',
   },
+  securitySection: {
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.xl,
+  },
   securityCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary + '10',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
+    backgroundColor: Colors.primary + '08',
     padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: Colors.primary + '30',
+    borderColor: Colors.primary + '20',
     gap: Spacing.md,
+  },
+  securityIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   securityInfo: {
     flex: 1,
@@ -1131,51 +1409,62 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
-  modalKeyboardAvoid: {
-    flex: 1,
-  },
   modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: height * 0.9,
+  },
+  modalGradient: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: Spacing.lg,
     paddingBottom: Platform.OS === 'ios' ? Spacing.xl * 2 : Spacing.xl,
-    maxHeight: height * 0.9,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   modalTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.md,
     flex: 1,
     marginRight: Spacing.md,
   },
   selectedMethodIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: Colors.text,
-    flex: 1,
     fontFamily: Typography.primaryBold,
   },
-  closeButton: {
-    padding: Spacing.xs,
-  },
   modalSubtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginTop: 2,
+    fontFamily: Typography.primary,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  amountLabel: {
     fontSize: 16,
     color: Colors.textSecondary,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     fontFamily: Typography.primary,
   },
   amountInputContainer: {
@@ -1183,92 +1472,188 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.surface,
     padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.xl,
+    borderWidth: 2,
+    borderColor: Colors.primary + '30',
+  },
+  currencySymbol: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginRight: Spacing.xs,
+    fontFamily: Typography.primaryBold,
   },
   amountInput: {
     flex: 1,
-    fontSize: width < 375 ? 28 : 32,
+    fontSize: width < 375 ? 32 : 36,
     fontWeight: 'bold',
     color: Colors.text,
     fontFamily: Typography.primaryBold,
     padding: 0,
   },
   currencyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: Colors.textSecondary,
     marginLeft: Spacing.sm,
     fontFamily: Typography.primary,
   },
-  quickAmounts: {
+  quickAmountsLabel: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+    fontFamily: Typography.primary,
+  },
+  quickAmountsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   quickAmountButton: {
     minWidth: (width - Spacing.lg * 2 - Spacing.sm * 2) / 3,
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  disabledAmountButton: {
-    opacity: 0.5,
+  quickAmountButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   quickAmountText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    fontFamily: Typography.primarySemiBold,
+  },
+  quickAmountTextActive: {
+    color: '#FFF',
+  },
+  summaryCard: {
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.xl,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  summaryTotal: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  summaryLabel: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    fontFamily: Typography.primary,
+  },
+  summaryValue: {
+    fontSize: 15,
     fontWeight: '500',
     color: Colors.text,
     fontFamily: Typography.primaryMedium,
   },
-  disabledAmountText: {
-    color: Colors.textSecondary,
+  summaryTotalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    fontFamily: Typography.primarySemiBold,
   },
-  commissionInfo: {
-    backgroundColor: Colors.surface,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
-  },
-  commissionText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    fontFamily: Typography.primary,
+  summaryTotalValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.primary,
+    fontFamily: Typography.primaryBold,
   },
   modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
     backgroundColor: Colors.primary,
     padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
     marginBottom: Spacing.md,
   },
   modalButtonDisabled: {
     backgroundColor: Colors.primary + '80',
   },
   modalButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: 'white',
     fontFamily: Typography.primarySemiBold,
   },
   changeMethodButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
     padding: Spacing.md,
   },
   changeMethodText: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.primary,
     fontFamily: Typography.primaryMedium,
   },
-  balanceInfo: {
-    fontSize: 14,
+  methodsScroll: {
+    maxHeight: height * 0.6,
+  },
+  methodOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border + '30',
+  },
+  methodOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  methodOptionInfo: {
+    flex: 1,
+  },
+  methodOptionName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.text,
+    marginBottom: 2,
+    fontFamily: Typography.primaryMedium,
+  },
+  methodOptionDetails: {
+    fontSize: 13,
     color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
     fontFamily: Typography.primary,
+  },
+  optionPopularBadge: {
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: Spacing.sm,
+  },
+  optionPopularText: {
+    fontSize: 11,
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontFamily: Typography.primaryBold,
+  },
+  filterButton: {
+    padding: Spacing.sm,
   },
 });
