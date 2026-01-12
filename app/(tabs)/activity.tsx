@@ -28,26 +28,26 @@ import { useUserStore, ActivityItem } from '@/hooks/useUserData';
 const FILTERS = [
   { id: 'all', label: 'Tout' },
   { id: 'today', label: "Aujourd'hui" },
-  { id: 'completed', label: 'Termin\u00e9s' },
-  { id: 'pending', label: '\u00c0 venir' },
-  { id: 'cancelled', label: 'Annul\u00e9s' },
+  { id: 'completed', label: 'Terminés' },
+  { id: 'pending', label: 'a venir' },
+  { id: 'cancelled', label: 'Annulés' },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   completed: {
-    label: 'Termin\u00e9',
+    label: 'Terminé',
     color: '#16A34A',
     bg: '#DCFCE7',
     icon: CheckCircle,
   },
   pending: {
-    label: '\u00c0 venir',
+    label: 'a venir',
     color: '#F59E0B',
     bg: '#FEF3C7',
     icon: Clock,
   },
   cancelled: {
-    label: 'Annul\u00e9',
+    label: 'Annulé',
     color: '#EF4444',
     bg: '#FEE2E2',
     icon: XCircle,
