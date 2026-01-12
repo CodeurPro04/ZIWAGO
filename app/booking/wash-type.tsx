@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Car, Wallet, ChevronRight } from 'lucide-react-native';
 import { Button } from '@/components/Button';
@@ -41,7 +41,21 @@ export default function WashTypeScreen() {
   ];
 
   const handleRequest = () => {
-    router.push('/booking/searching');
+    const selectedWash = washTypes.find((wash) => wash.type === selectedWashType);
+    if (!selectedWash) {
+      Alert.alert('SÇ¸lection requise', 'Veuillez choisir un type de lavage');
+      return;
+    }
+
+    router.push({
+      pathname: '/booking/searching',
+      params: {
+        address: encodeURIComponent(selectedLocation),
+        vehicle: encodeURIComponent(selectedVehicle),
+        washType: encodeURIComponent(selectedWash.title),
+        price: selectedWash.price.toString(),
+      },
+    });
   };
 
   return (
