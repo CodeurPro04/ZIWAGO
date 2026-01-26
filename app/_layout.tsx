@@ -23,6 +23,7 @@ export default function RootLayout() {
           <Stack.Screen name="onboarding/success" />
           <Stack.Screen name="booking/vehicle-selection" />
           <Stack.Screen name="booking/schedule" />
+          <Stack.Screen name="booking/schedule-success" />
           <Stack.Screen name="booking/location" />
           <Stack.Screen name="booking/wash-type" />
           <Stack.Screen name="booking/searching" />

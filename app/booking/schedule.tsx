@@ -6,6 +6,12 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Button } from '@/components/Button';
 import { useUserStore } from '@/hooks/useUserData';
 import { Colors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import BerlineSvg from '@/assets/svg/berline.svg';
+import CompacteSvg from '@/assets/svg/compacte.svg';
+import SuvSvg from '@/assets/svg/suv.svg';
+import GroupSvg from '@/assets/svg/Group.svg';
+import Group5Svg from '@/assets/svg/Group5.svg';
+import Group7Svg from '@/assets/svg/Group7.svg';
 
 type TimeSlot = {
   id: string;
@@ -20,9 +26,9 @@ const WASH_TYPES = {
 };
 
 const WASH_TYPE_OPTIONS = [
-  { key: 'exterior', title: WASH_TYPES.exterior.title, price: WASH_TYPES.exterior.price },
-  { key: 'interior', title: WASH_TYPES.interior.title, price: WASH_TYPES.interior.price },
-  { key: 'complete', title: WASH_TYPES.complete.title, price: WASH_TYPES.complete.price },
+  { key: 'exterior', title: WASH_TYPES.exterior.title, price: WASH_TYPES.exterior.price, icon: GroupSvg },
+  { key: 'interior', title: WASH_TYPES.interior.title, price: WASH_TYPES.interior.price, icon: Group5Svg },
+  { key: 'complete', title: WASH_TYPES.complete.title, price: WASH_TYPES.complete.price, icon: Group7Svg },
 ];
 
 
@@ -33,7 +39,11 @@ const TIME_SLOTS: TimeSlot[] = [
   { id: 'afternoon', label: '14:00 - 16:00', hint: 'Recommand\u00e9' },
   { id: 'evening', label: '17:00 - 19:00', hint: 'Fin de journ\u00e9e' },
 ];
-const VEHICLES = ['Berline', 'Compacte', 'SUV'] as const;
+const VEHICLES = [
+  { key: 'Berline', label: 'Berline', icon: BerlineSvg },
+  { key: 'Compacte', label: 'Compacte', icon: CompacteSvg },
+  { key: 'SUV', label: 'SUV', icon: SuvSvg },
+] as const;
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -65,6 +75,9 @@ export default function ScheduleScreen() {
 
   const washConfig = WASH_TYPES[selectedWashType] || WASH_TYPES.exterior;
   const selectedSlot = TIME_SLOTS.find((slot) => slot.id === selectedSlotId);
+  const selectedSlotPrice = selectedSlot?.id === 'evening'
+    ? washConfig.price + 1000
+    : washConfig.price;
 
   const handleSchedule = () => {
     if (!selectedWashType) {
@@ -81,12 +94,12 @@ export default function ScheduleScreen() {
     const scheduledAt = `${day.fullLabel} - ${selectedSlot.label}`;
 
     router.push({
-      pathname: '/booking/searching',
+      pathname: '/booking/schedule-success',
       params: {
         address: encodeURIComponent(selectedLocation),
         vehicle: encodeURIComponent(selectedVehicle),
         washType: encodeURIComponent(washConfig.title),
-        price: washConfig.price.toString(),
+        price: selectedSlotPrice.toString(),
         scheduledAt: encodeURIComponent(scheduledAt),
       },
     });
@@ -146,16 +159,19 @@ export default function ScheduleScreen() {
         </View>
         <View style={styles.vehicleRow}>
           {VEHICLES.map((vehicle) => {
-            const isActive = vehicle === selectedVehicle;
+            const isActive = vehicle.key === selectedVehicle;
             return (
               <TouchableOpacity
-                key={vehicle}
+                key={vehicle.key}
                 style={[styles.vehicleCard, isActive && styles.vehicleCardActive]}
-                onPress={() => updateUserData('selectedVehicle', vehicle)}
+                onPress={() => updateUserData('selectedVehicle', vehicle.key)}
                 activeOpacity={0.8}
               >
+                <View style={styles.vehicleIcon}>
+                  <vehicle.icon width={58} height={38} />
+                </View>
                 <Text style={[styles.vehicleLabel, isActive && styles.vehicleLabelActive]}>
-                  {vehicle}
+                  {vehicle.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -175,12 +191,17 @@ export default function ScheduleScreen() {
                 onPress={() => updateUserData('selectedWashType', wash.key)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.washTypeTitle, isActive && styles.washTypeTitleActive]}>
-                  {wash.title}
-                </Text>
-                <Text style={[styles.washTypePrice, isActive && styles.washTypePriceActive]}>
-                  {wash.price.toLocaleString()} F CFA
-                </Text>
+                <View style={styles.washTypeIcon}>
+                  <wash.icon width={54} height={54} />
+                </View>
+                <View style={styles.washTypeBody}>
+                  <Text style={[styles.washTypeTitle, isActive && styles.washTypeTitleActive]}>
+                    {wash.title}
+                  </Text>
+                  <Text style={[styles.washTypePrice, isActive && styles.washTypePriceActive]}>
+                    {wash.price.toLocaleString()} F CFA
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -221,6 +242,7 @@ export default function ScheduleScreen() {
 
         {TIME_SLOTS.map((slot) => {
           const isActive = slot.id === selectedSlotId;
+          const slotPrice = slot.id === 'evening' ? washConfig.price + 1000 : washConfig.price;
           return (
             <TouchableOpacity
               key={slot.id}
@@ -238,7 +260,7 @@ export default function ScheduleScreen() {
               </View>
               <View style={[styles.slotBadge, isActive && styles.slotBadgeActive]}>
                 <Text style={[styles.slotBadgeText, isActive && styles.slotBadgeTextActive]}>
-                  {washConfig.price.toLocaleString()} F CFA
+                  {slotPrice.toLocaleString()} F CFA
                 </Text>
               </View>
             </TouchableOpacity>
@@ -362,6 +384,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
+  vehicleIcon: {
+    marginBottom: Spacing.sm,
+  },
   vehicleLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -375,6 +400,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   washTypeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
@@ -390,6 +418,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text,
     marginBottom: 6,
+  },
+  washTypeIcon: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  washTypeBody: {
+    flex: 1,
   },
   washTypeTitleActive: {
     color: Colors.primary,

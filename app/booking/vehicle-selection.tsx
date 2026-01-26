@@ -13,7 +13,6 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  Image,
   Animated,
   Easing,
 } from "react-native";
@@ -28,6 +27,12 @@ import {
   ShieldCheck,
 } from "lucide-react-native";
 import { useUserStore } from "@/hooks/useUserData";
+import BerlineSvg from "@/assets/svg/berline.svg";
+import CompacteSvg from "@/assets/svg/compacte.svg";
+import SuvSvg from "@/assets/svg/suv.svg";
+import GroupSvg from "@/assets/svg/Group.svg";
+import Group5Svg from "@/assets/svg/Group5.svg";
+import Group7Svg from "@/assets/svg/Group7.svg";
 
 const MAPBOX_TOKEN =
   "pk.eyJ1IjoiY29kZXVycHJvMDQiLCJhIjoiY21jY2w4MW4zMDkxODJqcXNydWZkenBjYSJ9.d0SfKBeHypUYmQfJXjlR1Q";
@@ -80,17 +85,17 @@ const VEHICLES = [
   {
     key: "Berline",
     label: "Berline",
-    image: require("@/assets/images/berline1.png"),
+    icon: BerlineSvg,
   },
   {
     key: "Compacte",
     label: "Compacte",
-    image: require("@/assets/images/compacte.png"),
+    icon: CompacteSvg,
   },
   {
     key: "SUV",
     label: "SUV",
-    image: require("@/assets/images/suv.png"),
+    icon: SuvSvg,
   },
 ];
 
@@ -101,7 +106,7 @@ const WASH_TYPES = [
     description: "Carrosserie, vitres et pneus",
     duration: "20 min",
     price: 2000,
-    image: require("@/assets/images/exterieur.jpg"),
+    icon: GroupSvg,
   },
   {
     key: "interior",
@@ -109,7 +114,7 @@ const WASH_TYPES = [
     description: "Sièges, tapis et tableau de bord",
     duration: "30 min",
     price: 2500,
-    image: require("@/assets/images/interieur.jpg"),
+    icon: Group5Svg,
   },
   {
     key: "complete",
@@ -117,7 +122,7 @@ const WASH_TYPES = [
     description: "Extérieur + intérieur complets",
     duration: "45 min",
     price: 4000,
-    image: require("@/assets/images/complet.jpg"),
+    icon: Group7Svg,
   },
 ];
 
@@ -410,7 +415,7 @@ export default function BookingNowScreen() {
           </TouchableOpacity>
           <View>
             <Text style={styles.headerTitle}>Reserver maintenant</Text>
-            <Text style={styles.headerSubtitle}>Choisissez l'emplacement et le service</Text>
+            <Text style={styles.headerSubtitle}>Choisissez l&lsquo;emplacement et le service</Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
@@ -603,7 +608,9 @@ export default function BookingNowScreen() {
                           style={[styles.vehicleCard, isActive && styles.vehicleCardActive]}
                           onPress={() => updateUserData("selectedVehicle", vehicle.key)}
                         >
-                          <Image source={vehicle.image} style={styles.vehicleImage} resizeMode="contain" />
+                        <View style={styles.vehicleIcon}>
+                          <vehicle.icon width={70} height={45} />
+                        </View>
                           <Text style={[styles.vehicleText, isActive && styles.vehicleTextActive]}>
                             {vehicle.label}
                           </Text>
@@ -626,7 +633,9 @@ export default function BookingNowScreen() {
                           style={[styles.washCard, isActive && styles.washCardActive]}
                           onPress={() => updateUserData("selectedWashType", wash.key)}
                         >
-                          <Image source={wash.image} style={styles.washImage} resizeMode="cover" />
+                        <View style={styles.washIcon}>
+                          <wash.icon width={64} height={64} />
+                        </View>
                           <View style={styles.washBody}>
                             <View style={styles.washHeader}>
                               <Text style={styles.washTitle}>{wash.title}</Text>
@@ -707,7 +716,7 @@ export default function BookingNowScreen() {
           <View style={styles.searchOverlay}>
             <View style={styles.searchingCard}>
               <View style={styles.searchingHeader}>
-                <Text style={styles.searchingTitle}>Recherche d'un laveur a proximite...</Text>
+                <Text style={styles.searchingTitle}>Recherche d&lsquo;un laveur a proximite...</Text>
                 <Text style={styles.searchingTimer}>
                   {String(Math.floor(searchElapsed / 60)).padStart(2, '0')}:
                   {String(searchElapsed % 60).padStart(2, '0')}
@@ -1060,9 +1069,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEF2FF",
     borderColor: "#4A6FFF",
   },
-  vehicleImage: {
-    width: 70,
-    height: 45,
+  vehicleIcon: {
     marginBottom: 6,
   },
   vehicleText: {
@@ -1090,10 +1097,11 @@ const styles = StyleSheet.create({
     borderColor: "#4A6FFF",
     backgroundColor: "#F5F7FF",
   },
-  washImage: {
+  washIcon: {
     width: 64,
     height: 64,
-    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   washBody: {
     flex: 1,
