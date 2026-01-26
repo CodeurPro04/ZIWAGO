@@ -257,13 +257,8 @@ export default function HomeScreen() {
               onPress={() => router.push(action.action)}
               activeOpacity={0.8}
             >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: `${action.tone}15` },
-                ]}
-              >
-                <action.icon size={20} color={action.tone} />
+              <View style={styles.actionIcon}>
+                <action.icon width={80} height={80} />
               </View>
               <Text style={styles.actionTitle}>{action.title}</Text>
               <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
@@ -468,13 +463,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
+    alignItems: "center",
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.sm,
   },
   actionTitle: {
@@ -482,10 +475,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.text,
     marginBottom: 4,
+    textAlign: "center",
   },
   actionSubtitle: {
     fontSize: 12,
     color: Colors.textSecondary,
+    textAlign: "center",
   },
   serviceCard: {
     flexDirection: "row",
