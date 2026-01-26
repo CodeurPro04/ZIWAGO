@@ -22,6 +22,9 @@ export default function ScheduleSuccessScreen() {
   const params = useLocalSearchParams();
   const addActivity = useUserStore((state) => state.addActivity);
   const activities = useUserStore((state) => state.activities);
+  const walletBalance = useUserStore((state) => state.walletBalance);
+  const updateUserData = useUserStore((state) => state.updateUserData);
+  const addWalletTransaction = useUserStore((state) => state.addWalletTransaction);
 
   const address = params.address ? decodeURIComponent(params.address as string) : '';
   const vehicle = params.vehicle ? decodeURIComponent(params.vehicle as string) : '';
@@ -29,6 +32,7 @@ export default function ScheduleSuccessScreen() {
   const price = params.price ? parseInt(params.price as string, 10) : 0;
   const scheduledAt = params.scheduledAt ? decodeURIComponent(params.scheduledAt as string) : '';
   const activityIdRef = useRef(`sched-${Date.now()}`);
+  const billedRef = useRef(false);
 
   const pieces = useMemo<ConfettiPiece[]>(
     () =>
@@ -75,6 +79,20 @@ export default function ScheduleSuccessScreen() {
       rating: null,
     });
   }, [activities, addActivity, price, scheduledAt, vehicle, washType]);
+
+  useEffect(() => {
+    if (billedRef.current) return;
+    billedRef.current = true;
+    const nextBalance = Math.max(0, walletBalance - price);
+    updateUserData('walletBalance', nextBalance);
+    addWalletTransaction({
+      id: `debit-${Date.now()}`,
+      type: 'debit',
+      title: `Programmation lavage - ${washType || 'Lavage'}`,
+      date: scheduledAt || "Aujourd'hui",
+      amount: price,
+    });
+  }, [addWalletTransaction, price, scheduledAt, updateUserData, walletBalance, washType]);
 
   return (
     <SafeAreaView style={styles.container}>

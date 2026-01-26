@@ -52,6 +52,7 @@ export default function ScheduleScreen() {
     selectedLocationCoords,
     selectedVehicle,
     selectedWashType,
+    walletBalance,
     updateUserData,
   } = useUserStore();
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
@@ -89,6 +90,11 @@ export default function ScheduleScreen() {
       Alert.alert('Horaire requis', 'Veuillez s\u00e9lectionner un cr\u00e9neau disponible.');
       return;
     }
+    if (selectedSlotPrice > walletBalance) {
+      Alert.alert('Solde insuffisant', 'Veuillez recharger votre portefeuille avant de programmer.');
+      return;
+    }
+
 
     const day = days[selectedDayIndex];
     const scheduledAt = `${day.fullLabel} - ${selectedSlot.label}`;

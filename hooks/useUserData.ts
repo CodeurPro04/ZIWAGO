@@ -10,6 +10,7 @@ interface UserData {
   selectedVehicle: 'Berline' | 'Compacte' | 'SUV';
   selectedWashType: 'exterior' | 'interior' | 'complete';
   walletBalance: number;
+  walletTransactions: WalletTransaction[];
   activities: ActivityItem[];
 }
 
@@ -18,6 +19,7 @@ interface UserStore extends UserData {
   resetUserData: () => void;
   addActivity: (activity: ActivityItem) => void;
   updateActivityStatus: (id: string, status: ActivityItem['status']) => void;
+  addWalletTransaction: (transaction: WalletTransaction) => void;
 }
 
 type ActivityStatus = 'completed' | 'pending' | 'cancelled';
@@ -33,6 +35,14 @@ export interface ActivityItem {
   rating?: number | null;
 }
 
+export type WalletTransaction = {
+  id: string;
+  type: 'credit' | 'debit';
+  title: string;
+  date: string;
+  amount: number;
+};
+
 const initialState: UserData = {
   phone: '',
   firstName: '',
@@ -43,6 +53,36 @@ const initialState: UserData = {
   selectedVehicle: 'Berline',
   selectedWashType: 'exterior',
   walletBalance: 3000,
+  walletTransactions: [
+    {
+      id: 't1',
+      type: 'credit',
+      title: 'Recharge Orange Money',
+      date: "Aujourd'hui, 14:30",
+      amount: 5000,
+    },
+    {
+      id: 't2',
+      type: 'debit',
+      title: 'Lavage voiture - Renault Clio',
+      date: 'Hier, 10:15',
+      amount: 2500,
+    },
+    {
+      id: 't3',
+      type: 'credit',
+      title: 'Recharge MTN Money',
+      date: '15 mars, 09:45',
+      amount: 10000,
+    },
+    {
+      id: 't4',
+      type: 'debit',
+      title: 'Nettoyage intérieur',
+      date: '12 mars, 16:20',
+      amount: 3500,
+    },
+  ],
   activities: [
     {
       id: 'seed-1',
@@ -83,5 +123,10 @@ export const useUserStore = create<UserStore>((set) => ({
       activities: state.activities.map((item) =>
         item.id === id ? { ...item, status } : item
       ),
+    })),
+  addWalletTransaction: (transaction) =>
+    set((state) => ({
+      ...state,
+      walletTransactions: [transaction, ...state.walletTransactions],
     })),
 }));

@@ -15,6 +15,7 @@ import {
   Dimensions,
   Animated,
   Easing,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
@@ -25,6 +26,8 @@ import {
   MapPin,
   Search,
   ShieldCheck,
+  Wallet,
+  ChevronRight,
 } from "lucide-react-native";
 import { useUserStore } from "@/hooks/useUserData";
 import BerlineSvg from "@/assets/svg/berline.svg";
@@ -142,6 +145,8 @@ export default function BookingNowScreen() {
     selectedWashType,
     walletBalance,
     updateUserData,
+    addWalletTransaction,
+    addActivity,
   } = useUserStore();
 
   const [coords, setCoords] = useState(
@@ -164,6 +169,12 @@ export default function BookingNowScreen() {
     () => WASH_TYPES.find((wash) => wash.key === selectedWashType) || WASH_TYPES[0],
     [selectedWashType]
   );
+
+  const formatNow = () => {
+    const now = new Date();
+    const time = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return `Aujourd'hui, ${time}`;
+  };
 
   useEffect(() => {
     if (selectedLocationCoords) {
@@ -354,6 +365,24 @@ export default function BookingNowScreen() {
       return;
     }
 
+    if (walletBalance < selectedWash.price) {
+      Alert.alert(
+        "Solde insuffisant",
+        "Votre portefeuille est insuffisant pour reserver ce lavage. Veuillez recharger."
+      );
+      return;
+    }
+
+    const nextBalance = Math.max(0, walletBalance - selectedWash.price);
+    updateUserData("walletBalance", nextBalance);
+    addWalletTransaction({
+      id: `debit-${Date.now()}`,
+      type: "debit",
+      title: `Reservation lavage - ${selectedWash.title}`,
+      date: formatNow(),
+      amount: selectedWash.price,
+    });
+
     if (foundTimerRef.current) {
       clearTimeout(foundTimerRef.current);
       foundTimerRef.current = null;
@@ -372,10 +401,49 @@ export default function BookingNowScreen() {
     );
 
     foundTimerRef.current = setTimeout(() => {
+      const washerName = "Jean K.";
+      const scheduledLabel = formatNow();
+      const washerRating = 4.9;
+      const washerReviews = 247;
+      const washerPhone = "+225 07 07 07 07 07";
+      const washerEta = 7;
+      const bookingId = `bk-${Date.now()}`;
+
+      addActivity({
+        id: bookingId,
+        status: "pending",
+        title: selectedWash.title,
+        vehicle: selectedVehicle,
+        washer: washerName,
+        date: scheduledLabel,
+        price: selectedWash.price,
+        rating: null,
+      });
+
       setIsSearchingWasher(false);
       setIsWasherFound(true);
-      setFoundWasher({ name: "Jean K.", eta: 7 });
+      setFoundWasher({ name: washerName, eta: washerEta });
       foundTimerRef.current = null;
+
+      router.push({
+        pathname: "/booking/activity-details",
+        params: {
+          id: bookingId,
+          status: "pending",
+          title: selectedWash.title,
+          vehicle: selectedVehicle,
+          washer: washerName,
+          date: scheduledLabel,
+          price: selectedWash.price.toString(),
+          rating: "",
+          washerPhone,
+          washerRating: washerRating.toString(),
+          washerReviews: washerReviews.toString(),
+          eta: washerEta.toString(),
+          address,
+          washerAvatar: "",
+        },
+      });
     }, 5000);
   };
 
@@ -608,9 +676,9 @@ export default function BookingNowScreen() {
                           style={[styles.vehicleCard, isActive && styles.vehicleCardActive]}
                           onPress={() => updateUserData("selectedVehicle", vehicle.key)}
                         >
-                        <View style={styles.vehicleIcon}>
-                          <vehicle.icon width={70} height={45} />
-                        </View>
+                          <View style={styles.vehicleIcon}>
+                            <vehicle.icon width={70} height={45} />
+                          </View>
                           <Text style={[styles.vehicleText, isActive && styles.vehicleTextActive]}>
                             {vehicle.label}
                           </Text>
@@ -618,6 +686,21 @@ export default function BookingNowScreen() {
                       );
                     })}
                   </View>
+                  {walletBalance > 0 && (
+                    <TouchableOpacity
+                      style={styles.walletInline}
+                      activeOpacity={0.8}
+                      onPress={() => router.push("/(tabs)/wallet")}
+                    >
+                      <View style={styles.walletIcon}>
+                        <Wallet size={18} color="#4A6FFF" />
+                      </View>
+                      <Text style={styles.walletInlineText}>
+                        Solde du portefeuille : {walletBalance.toLocaleString()} F CFA
+                      </Text>
+                      <ChevronRight size={18} color="#4A6FFF" />
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
 
@@ -647,6 +730,21 @@ export default function BookingNowScreen() {
                       );
                     })}
                   </View>
+                  {walletBalance > 0 && (
+                    <TouchableOpacity
+                      style={styles.walletInline}
+                      activeOpacity={0.8}
+                      onPress={() => router.push("/(tabs)/wallet")}
+                    >
+                      <View style={styles.walletIcon}>
+                        <Wallet size={18} color="#4A6FFF" />
+                      </View>
+                      <Text style={styles.walletInlineText}>
+                        Solde du portefeuille : {walletBalance.toLocaleString()} F CFA
+                      </Text>
+                      <ChevronRight size={18} color="#4A6FFF" />
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
 
@@ -675,12 +773,27 @@ export default function BookingNowScreen() {
                     </View>
                   </View>
 
-                  <TouchableOpacity style={styles.walletRow} activeOpacity={0.7}>
-                    <ShieldCheck size={18} color="#4A6FFF" />
-                    <Text style={styles.walletText}>
-                      Solde du portefeuille : {walletBalance.toLocaleString()} F CFA
-                    </Text>
-                  </TouchableOpacity>
+                  {walletBalance > 0 ? (
+                    <TouchableOpacity
+                      style={styles.walletRow}
+                      activeOpacity={0.7}
+                      onPress={() => router.push("/(tabs)/wallet")}
+                    >
+                      <View style={styles.walletIcon}>
+                        <Wallet size={18} color="#4A6FFF" />
+                      </View>
+                      <Text style={styles.walletText}>
+                        Solde du portefeuille : {walletBalance.toLocaleString()} F CFA
+                      </Text>
+                      <ChevronRight size={18} color="#4A6FFF" />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.walletEmpty}>
+                      <Text style={styles.walletEmptyText}>
+                        Votre portefeuille est vide. Rechargez-le pour finaliser la demande.
+                      </Text>
+                    </View>
+                  )}
                 </>
               )}
 
@@ -1155,17 +1268,70 @@ const styles = StyleSheet.create({
   walletRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "#EEF2FF",
+    gap: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  walletText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  walletInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  walletIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  walletInlineText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  walletEmpty: {
+    backgroundColor: "#FEF2F2",
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
   },
-  walletText: {
+  walletEmptyText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#111827",
+    color: "#B91C1C",
   },
   searchOverlay: {
     position: "absolute",

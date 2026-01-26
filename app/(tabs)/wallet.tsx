@@ -28,6 +28,7 @@ import {
 } from "lucide-react-native";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
+import { useUserStore } from "@/hooks/useUserData";
 
 const QUICK_ACTIONS = [
   { id: "topup", label: "Recharger", icon: Plus, tone: "#22C55E" },
@@ -41,37 +42,6 @@ const PAYMENT_METHODS = [
   { id: "mtn", label: "MTN Money", detail: "**** 9231", color: "#FACC15" },
   { id: "moov", label: "Moov Money", detail: "**** 5566", color: "#22C55E" },
   { id: "card", label: "Carte bancaire", detail: "**** 4321", color: "#4A6FFF" },
-];
-
-const INITIAL_TRANSACTIONS = [
-  {
-    id: "t1",
-    type: "credit" as const,
-    title: "Recharge Orange Money",
-    date: "Aujourd'hui, 14:30",
-    amount: 5000,
-  },
-  {
-    id: "t2",
-    type: "debit" as const,
-    title: "Lavage voiture - Renault Clio",
-    date: "Hier, 10:15",
-    amount: 2500,
-  },
-  {
-    id: "t3",
-    type: "credit" as const,
-    title: "Recharge MTN Money",
-    date: "15 mars, 09:45",
-    amount: 10000,
-  },
-  {
-    id: "t4",
-    type: "debit" as const,
-    title: "Nettoyage intérieur",
-    date: "12 mars, 16:20",
-    amount: 3500,
-  },
 ];
 
 const formatNow = () => {
@@ -88,18 +58,20 @@ export default function WalletScreen() {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [amount, setAmount] = useState("");
   const [selectedMethod, setSelectedMethod] = useState(PAYMENT_METHODS[0].id);
-  const [balance, setBalance] = useState(28500);
-  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
+  const walletBalance = useUserStore((state) => state.walletBalance);
+  const updateUserData = useUserStore((state) => state.updateUserData);
+  const walletTransactions = useUserStore((state) => state.walletTransactions);
+  const addWalletTransaction = useUserStore((state) => state.addWalletTransaction);
 
   const stats = useMemo(() => {
-    const totalIn = transactions
+    const totalIn = walletTransactions
       .filter((t) => t.type === "credit")
       .reduce((sum, t) => sum + t.amount, 0);
-    const totalOut = transactions
+    const totalOut = walletTransactions
       .filter((t) => t.type === "debit")
       .reduce((sum, t) => sum + t.amount, 0);
     return { totalIn, totalOut };
-  }, [transactions]);
+  }, [walletTransactions]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -120,39 +92,33 @@ export default function WalletScreen() {
     const method = PAYMENT_METHODS.find((m) => m.id === selectedMethod);
     const title = method ? `Recharge ${method.label}` : "Recharge";
 
-    setBalance((prev) => prev + numeric);
-    setTransactions((prev) => [
-      {
-        id: `topup-${Date.now()}`,
-        type: "credit",
-        title,
-        date: formatNow(),
-        amount: numeric,
-      },
-      ...prev,
-    ]);
+    updateUserData("walletBalance", walletBalance + numeric);
+    addWalletTransaction({
+      id: `topup-${Date.now()}`,
+      type: "credit",
+      title,
+      date: formatNow(),
+      amount: numeric,
+    });
     setShowTopup(false);
   };
 
   const handleWithdraw = () => {
     const numeric = parseInt(sanitizeAmount(amount), 10);
     if (!numeric || numeric <= 0) return;
-    if (numeric > balance) return;
+    if (numeric > walletBalance) return;
 
     const method = PAYMENT_METHODS.find((m) => m.id === selectedMethod);
     const title = method ? `Retrait ${method.label}` : "Retrait";
 
-    setBalance((prev) => prev - numeric);
-    setTransactions((prev) => [
-      {
-        id: `withdraw-${Date.now()}`,
-        type: "debit",
-        title,
-        date: formatNow(),
-        amount: numeric,
-      },
-      ...prev,
-    ]);
+    updateUserData("walletBalance", walletBalance - numeric);
+    addWalletTransaction({
+      id: `withdraw-${Date.now()}`,
+      type: "debit",
+      title,
+      date: formatNow(),
+      amount: numeric,
+    });
     setShowWithdraw(false);
   };
 
@@ -190,7 +156,7 @@ export default function WalletScreen() {
           <View style={styles.balanceHeader}>
             <Text style={styles.balanceLabel}>Solde disponible</Text>
           </View>
-          <Text style={styles.balanceValue}>{balance.toLocaleString()} F CFA</Text>
+          <Text style={styles.balanceValue}>{walletBalance.toLocaleString()} F CFA</Text>
           <View style={styles.balanceRow}
           >
             <View style={styles.balanceStat}>
@@ -255,7 +221,7 @@ export default function WalletScreen() {
             <Text style={styles.sectionLink}>Voir tout</Text>
           </TouchableOpacity>
         </View>
-        {transactions.map((transaction) => (
+        {walletTransactions.map((transaction) => (
           <View key={transaction.id} style={styles.transactionCard}>
             <View
               style={[
@@ -394,10 +360,10 @@ export default function WalletScreen() {
             <TouchableOpacity
               style={[
                 styles.modalPrimaryButton,
-                balance < parseInt(sanitizeAmount(amount), 10) && styles.modalPrimaryDisabled,
+                walletBalance < parseInt(sanitizeAmount(amount), 10) && styles.modalPrimaryDisabled,
               ]}
               onPress={handleWithdraw}
-              disabled={balance < parseInt(sanitizeAmount(amount), 10)}
+              disabled={walletBalance < parseInt(sanitizeAmount(amount), 10)}
             >
               <Text style={styles.modalPrimaryText}>Confirmer le retrait</Text>
             </TouchableOpacity>

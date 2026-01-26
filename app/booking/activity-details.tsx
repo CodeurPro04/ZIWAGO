@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Linking } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Car, User, Clock, CheckCircle, XCircle, Calendar, ChevronLeft, Star } from "lucide-react-native";
+import { Car, User, Clock, CheckCircle, XCircle, Calendar, ChevronLeft, Star, Phone, MapPin } from "lucide-react-native";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
@@ -18,6 +18,12 @@ export default function ActivityDetailsScreen() {
   const title = (params.title as string) || "Lavage Premium";
   const vehicle = (params.vehicle as string) || "Renault Clio";
   const washer = (params.washer as string) || "Jean D.";
+  const washerPhone = (params.washerPhone as string) || "";
+  const washerRating = params.washerRating ? parseFloat(params.washerRating as string) : null;
+  const washerReviews = params.washerReviews ? parseInt(params.washerReviews as string, 10) : null;
+  const eta = params.eta ? parseInt(params.eta as string, 10) : null;
+  const address = (params.address as string) || "";
+  const washerAvatar = (params.washerAvatar as string) || "";
   const date = (params.date as string) || "Aujourd'hui, 14:30";
   const price = parseInt((params.price as string) || "0", 10);
   const rating = params.rating ? parseFloat(params.rating as string) : null;
@@ -49,6 +55,39 @@ export default function ActivityDetailsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informations</Text>
+          <View style={styles.washerCard}>
+            <View style={styles.avatarRing}>
+              <Image
+                source={
+                  washerAvatar
+                    ? { uri: washerAvatar }
+                    : require("@/assets/images/default-avatar.jpeg")
+                }
+                style={styles.washerAvatar}
+              />
+            </View>
+            <View style={styles.washerInfo}>
+              <Text style={styles.washerName}>{washer}</Text>
+              {washerRating ? (
+                <View style={styles.washerRating}>
+                  <Star size={14} color="#F59E0B" fill="#F59E0B" />
+                  <Text style={styles.washerRatingText}>{washerRating.toFixed(1)}</Text>
+                  {washerReviews !== null ? (
+                    <Text style={styles.reviewText}>({washerReviews} avis)</Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+            {washerPhone ? (
+              <TouchableOpacity
+                style={styles.callButton}
+                onPress={() => Linking.openURL(`tel:${washerPhone}`)}
+              >
+                <Phone size={16} color="#FFFFFF" />
+                <Text style={styles.callButtonText}>Appeler</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
           <View style={styles.infoRow}>
             <Car size={16} color={Colors.primary} />
             <Text style={styles.infoText}>{vehicle}</Text>
@@ -61,6 +100,18 @@ export default function ActivityDetailsScreen() {
             <Clock size={16} color={Colors.primary} />
             <Text style={styles.infoText}>{date}</Text>
           </View>
+          {eta ? (
+            <View style={styles.infoRow}>
+              <Clock size={16} color={Colors.primary} />
+              <Text style={styles.infoText}>Arrivee estimee : {eta} min</Text>
+            </View>
+          ) : null}
+          {address ? (
+            <View style={styles.infoRow}>
+              <MapPin size={16} color={Colors.primary} />
+              <Text style={styles.infoText}>{address}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -161,6 +212,70 @@ const styles = StyleSheet.create({
     ...Typography.heading,
     marginBottom: Spacing.sm,
   },
+  washerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.md,
+  },
+  avatarRing: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  washerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  washerInfo: {
+    flex: 1,
+  },
+  washerName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+  washerRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  washerRatingText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#F59E0B",
+  },
+  callButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  callButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -205,6 +320,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#F59E0B",
+  },
+  reviewText: {
+    fontSize: 12,
+    color: "#B45309",
   },
   rateButton: {
     flexDirection: "row",
