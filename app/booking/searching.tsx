@@ -216,6 +216,14 @@ export default function SearchWasherScreen() {
     inputRange: [0, 0.33, 0.66, 1],
     outputRange: [0.2, 0.2, 0.2, 1],
   });
+  const ringOpacity = pulseAnim.interpolate({
+    inputRange: [1, 1.15],
+    outputRange: [0.35, 0],
+  });
+  const ringScaleLarge = pulseAnim.interpolate({
+    inputRange: [1, 1.15],
+    outputRange: [1.2, 1.9],
+  });
 
   const handleConfirmWasher = () => {
     if (!selectedWasher) return;
@@ -292,6 +300,54 @@ export default function SearchWasherScreen() {
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
           <X size={18} color="#111827" />
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.mapSection}>
+        {mapRegion ? (
+          <MapView
+            style={styles.map}
+            provider={PROVIDER_DEFAULT}
+            initialRegion={mapRegion}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            showsCompass={false}
+          >
+            {(userLocation || mapRegion) && (
+              <Marker coordinate={userLocation || mapRegion} title="Vous">
+                <View style={styles.mapPin}>
+                  <MapPin size={16} color="#FFFFFF" />
+                </View>
+              </Marker>
+            )}
+          </MapView>
+        ) : (
+          <View style={styles.mapPlaceholder}>
+            <ActivityIndicator size="large" color="#4A6FFF" />
+            <Text style={styles.placeholderText}>Chargement de la carte...</Text>
+          </View>
+        )}
+        <View style={styles.mapOverlay} pointerEvents="none">
+          <View style={styles.addressPill}>
+            <Text style={styles.addressPillText} numberOfLines={1}>
+              {booking.location}
+            </Text>
+          </View>
+          <View style={styles.pulseCenter}>
+            <Animated.View
+              style={[
+                styles.pulseRing,
+                { transform: [{ scale: pulseAnim }], opacity: ringOpacity },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.pulseRing,
+                { transform: [{ scale: ringScaleLarge }], opacity: ringOpacity },
+              ]}
+            />
+            <View style={styles.pulseCore} />
+          </View>
+        </View>
       </View>
 
       <View style={styles.summaryCard}>
@@ -522,6 +578,75 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EEF2F7',
     gap: 8,
+  },
+  mapSection: {
+    height: 240,
+    marginHorizontal: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+    marginBottom: 12,
+  },
+  mapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  addressPill: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    maxWidth: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  addressPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  pulseCenter: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 12,
+    height: 12,
+    marginLeft: -6,
+    marginTop: -6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderColor: '#4A6FFF',
+    backgroundColor: 'rgba(74, 111, 255, 0.08)',
+  },
+  pulseCore: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4A6FFF',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  mapPin: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4A6FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   summaryRow: {
     flexDirection: 'row',

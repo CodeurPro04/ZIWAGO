@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react-native";
+import CarFrontIcon from "@/assets/images/car1front.svg";
+import timemanage from "@/assets/images/timemanage.svg";
 import * as Location from "expo-location";
 import { useUserStore } from "@/hooks/useUserData";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
@@ -27,7 +29,7 @@ const QUICK_ACTIONS = [
     id: "instant",
     title: "Réserver maintenant",
     subtitle: "Un laveur arrive tout de suite",
-    icon: Zap,
+    icon: CarFrontIcon,
     action: "/booking/vehicle-selection",
     tone: "#4A6FFF",
   },
@@ -35,7 +37,7 @@ const QUICK_ACTIONS = [
     id: "schedule",
     title: "Programmer",
     subtitle: "Choisissez un créneau",
-    icon: Calendar,
+    icon: timemanage,
     action: "/booking/schedule",
     tone: "#0EA5E9",
   },
@@ -204,6 +206,27 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <TouchableOpacity
+          style={styles.locationCard}
+          onPress={() => router.push("/booking/location")}
+          activeOpacity={0.7}
+        >
+          <View style={styles.locationIcon}>
+            <MapPin size={18} color={Colors.primary} />
+          </View>
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationLabel}>Emplacement actuel</Text>
+            <Text style={styles.locationValue} numberOfLines={1}>
+              {isLocationLoading
+                ? "Localisation en cours..."
+                : locationError
+                  ? locationError
+                  : selectedLocation}
+            </Text>
+          </View>
+          <ChevronRight size={20} color={Colors.textSecondary} />
+        </TouchableOpacity>
+
         <View style={styles.heroCard}>
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>
@@ -222,27 +245,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-        <TouchableOpacity
-          style={styles.locationCard}
-          onPress={() => router.push("/booking/location")}
-          activeOpacity={0.7}
-        >
-          <View style={styles.locationIcon}>
-            <MapPin size={18} color={Colors.primary} />
-          </View>
-          <View style={styles.locationInfo}>
-            <Text style={styles.locationLabel}>Emplacement actuel</Text>
-            <Text style={styles.locationValue} numberOfLines={1}>
-              {isLocationLoading
-                ? "Localisation en cours..."
-                : locationError
-                ? locationError
-                : selectedLocation}
-            </Text>
-          </View>
-          <ChevronRight size={20} color={Colors.textSecondary} />
-        </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Actions rapides</Text>
@@ -269,34 +271,6 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Services populaires</Text>
-          <TouchableOpacity
-            onPress={() => router.push("/booking/vehicle-selection")}
-          >
-            <Text style={styles.sectionLink}>Voir tout</Text>
-          </TouchableOpacity>
-        </View>
-
-        {SERVICE_CARDS.map((service) => (
-          <TouchableOpacity
-            key={service.id}
-            style={styles.serviceCard}
-            activeOpacity={0.8}
-            onPress={() => router.push("/booking/vehicle-selection")}
-          >
-            <Image
-              source={service.image}
-              style={styles.serviceImage}
-              resizeMode="cover"
-            />
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceTitle}>{service.title}</Text>
-              <Text style={styles.serviceSubtitle}>{service.subtitle}</Text>
-              <Text style={styles.servicePrice}>{service.price}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
         {/* Offers Section
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Offres du moment</Text>
@@ -332,21 +306,6 @@ export default function HomeScreen() {
             </View>
           ))}
         </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Conseils d&apos;entretien</Text>
-        </View>
-        {TIPS.map((tip) => (
-          <View key={tip.id} style={styles.tipCard}>
-            <View style={styles.tipIcon}>
-              <Sparkles size={16} color={Colors.primary} />
-            </View>
-            <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>{tip.title}</Text>
-              <Text style={styles.tipSubtitle}>{tip.subtitle}</Text>
-            </View>
-          </View>
-        ))}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
