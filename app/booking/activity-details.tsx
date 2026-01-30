@@ -29,6 +29,7 @@ export default function ActivityDetailsScreen() {
   const price = parseInt((params.price as string) || "0", 10);
   const ratingParam = params.rating ? parseFloat(params.rating as string) : null;
   const activityId = (params.id as string) || "";
+  const fromReservation = params.fromReservation === "1";
   const activity = useUserStore((state) => state.activities.find((item) => item.id === activityId));
   const updateActivityRating = useUserStore((state) => state.updateActivityRating);
   const existingRating = activity?.rating ?? ratingParam ?? null;
@@ -46,9 +47,13 @@ export default function ActivityDetailsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ChevronLeft size={20} color={Colors.text} />
-        </TouchableOpacity>
+        {fromReservation ? (
+          <View style={styles.headerPlaceholder} />
+        ) : (
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ChevronLeft size={20} color={Colors.text} />
+          </TouchableOpacity>
+        )}
         <Text style={styles.headerTitle}>Détails</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -186,6 +191,22 @@ export default function ActivityDetailsScreen() {
             </Text>
           </View>
         )}
+        {fromReservation && (
+          <View style={styles.actionSection}>
+            <TouchableOpacity
+              style={styles.primaryActionButton}
+              onPress={() => router.replace("/(tabs)/activity")}
+            >
+              <Text style={styles.primaryActionText}>Voir mes activités</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryActionButton}
+              onPress={() => router.replace("/(tabs)/index")}
+            >
+              <Text style={styles.secondaryActionText}>Retour à l'accueil</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -205,6 +226,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.background,
+  },
+  headerPlaceholder: {
+    width: 36,
+    height: 36,
   },
   backButton: {
     width: 36,
@@ -422,5 +447,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B7280",
     textAlign: "center",
+  },
+  actionSection: {
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  primaryActionButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryActionText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  secondaryActionButton: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  secondaryActionText: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

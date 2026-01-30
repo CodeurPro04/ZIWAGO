@@ -425,7 +425,7 @@ export default function BookingNowScreen() {
       setFoundWasher({ name: washerName, eta: washerEta });
       foundTimerRef.current = null;
 
-      router.push({
+      router.replace({
         pathname: "/booking/activity-details",
         params: {
           id: bookingId,
@@ -442,6 +442,7 @@ export default function BookingNowScreen() {
           eta: washerEta.toString(),
           address,
           washerAvatar: "",
+          fromReservation: "1",
         },
       });
     }, 5000);

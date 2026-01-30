@@ -192,23 +192,16 @@ export default function ActivityScreen() {
                 <View style={styles.cardFooter}>
                   <Text style={styles.priceText}>{activity.price.toLocaleString()} FCFA</Text>
                   {activity.status === 'pending' ? (
-                    <View style={styles.actionRow}>
-                      <TouchableOpacity
-                        style={[styles.actionButton, styles.completeButton]}
-                        onPress={() => updateActivityStatus(activity.id, 'completed')}
-                      >
-                        <CheckCircle size={12} color="#FFFFFF" />
-                        <Text style={styles.actionText}>Terminé</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionButton, styles.cancelButton]}
-                        onPress={() => updateActivityStatus(activity.id, 'cancelled')}
-                      >
-                        <XCircle size={12} color="#EF4444" />
-                        <Text style={styles.cancelText}>Annuler</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : activity.status === 'completed' && !activity.rating ? (
+  <View style={styles.actionRow}>
+    <TouchableOpacity
+      style={[styles.actionButton, styles.cancelButton]}
+      onPress={() => updateActivityStatus(activity.id, 'cancelled')}
+    >
+      <XCircle size={12} color="#EF4444" />
+      <Text style={styles.cancelText}>Annuler</Text>
+    </TouchableOpacity>
+  </View>
+) : activity.status === 'completed' && !activity.rating ? (
                     <TouchableOpacity style={styles.rateButton} onPress={() => handleOpenDetails(activity)}>
                       <Star size={12} color="#F59E0B" />
                       <Text style={styles.rateText}>Évaluer</Text>
