@@ -31,8 +31,9 @@ export default function OnboardingStep1() {
 
         <View style={styles.bottomSection}>
           <View style={styles.pagination}>
+            <View style={[styles.paginationDot]} />
+            <View style={[styles.paginationDot]} />
             <View style={[styles.paginationDot, styles.paginationDotActive]} />
-            <View style={styles.paginationDot} />
           </View>
 
           <Text style={styles.title}>
@@ -42,7 +43,7 @@ export default function OnboardingStep1() {
           <View style={styles.buttonsContainer}>
             <Button
               title="Je veux réserver un lavage de voiture"
-              onPress={() => router.push("/onboarding/success")}
+              onPress={() => router.push("/auth/phone")}
             />
 
             <Button

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { Colors, Spacing } from '@/constants/theme';
+import City1Svg from '@/assets/images/City1.svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -15,29 +16,29 @@ export default function OnboardingSuccess() {
         <Text style={styles.logo}>ZIWAGO</Text>
 
         <View style={styles.imageContainer}>
-          <Image 
-            source={require('@/assets/images/Sale-pana1.png')}
+          <City1Svg
+            width="100%"
+            height="100%"
             style={styles.successImage}
-            resizeMode="contain"
           />
         </View>
 
         {/* Pagination dots */}
         <View style={styles.pagination}>
-          <View style={[styles.paginationDot, styles.paginationDotActive]} />
           <View style={[styles.paginationDot]} />
+          <View style={[styles.paginationDot, styles.paginationDotActive]} />
           <View style={[styles.paginationDot]} />
         </View>
 
         <View style={styles.bottomSection}>
           <Text style={styles.title}>
-            Réservez un lavage de voiture à tout moment, n&apos;importe où.
+            Réservez, suivez et payez. Tout dans une seule application.
           </Text>
 
           <View style={styles.buttonsContainer}>
             <Button 
               title="Suivant" 
-              onPress={() => router.replace('/onboarding/step3')} 
+              onPress={() => router.replace('/onboarding/step1')} 
             />
           </View>
         </View>

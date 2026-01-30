@@ -126,23 +126,7 @@ export default function ActivityScreen() {
           </View>
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.totalWashes}</Text>
-            <Text style={styles.statLabel}>Lavages</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={styles.ratingRow}>
-              <Star size={14} color="#F59E0B" fill="#F59E0B" />
-              <Text style={styles.statValue}>{stats.averageRating.toFixed(1)}</Text>
-            </View>
-            <Text style={styles.statLabel}>Note moyenne</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Calendar size={16} color={Colors.primary} />
-            <Text style={styles.statLabel}>{stats.planned} planifiés</Text>
-          </View>
-        </View>
+        
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
           {FILTERS.map((filter) => {

@@ -139,7 +139,7 @@ export default function VerificationScreen() {
           {/* Section renvoyer le code */}
           <View style={styles.resendSection}>
             <Text style={styles.resendText}>
-              Vous n'avez pas reçu le code ?
+              Vous n&lsquo;avez pas reçu le code ?
             </Text>
             <TouchableOpacity
               onPress={handleResendCode}

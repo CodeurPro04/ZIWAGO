@@ -644,7 +644,7 @@ export default function BookingNowScreen() {
               contentContainerStyle={styles.sheetContent}
             >
               <View style={styles.stepHeader}>
-                <Text style={styles.stepTitle}>Etape {stepIndex + 1} / 3</Text>
+                
                 <View style={styles.stepDots}>
                   {[0, 1, 2].map((step) => (
                     <View
