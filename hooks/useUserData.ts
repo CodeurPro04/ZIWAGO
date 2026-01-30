@@ -19,6 +19,7 @@ interface UserStore extends UserData {
   resetUserData: () => void;
   addActivity: (activity: ActivityItem) => void;
   updateActivityStatus: (id: string, status: ActivityItem['status']) => void;
+  updateActivityRating: (id: string, rating: number) => void;
   addWalletTransaction: (transaction: WalletTransaction) => void;
 }
 
@@ -122,6 +123,13 @@ export const useUserStore = create<UserStore>((set) => ({
       ...state,
       activities: state.activities.map((item) =>
         item.id === id ? { ...item, status } : item
+      ),
+    })),
+  updateActivityRating: (id, rating) =>
+    set((state) => ({
+      ...state,
+      activities: state.activities.map((item) =>
+        item.id === id ? { ...item, rating } : item
       ),
     })),
   addWalletTransaction: (transaction) =>

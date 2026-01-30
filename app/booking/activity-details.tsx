@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Linking } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Car, User, Clock, CheckCircle, XCircle, Calendar, ChevronLeft, Star, Phone, MapPin } from "lucide-react-native";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { useUserStore } from "@/hooks/useUserData";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   completed: { label: "Terminé", color: "#16A34A", bg: "#DCFCE7", icon: CheckCircle },
@@ -26,7 +27,18 @@ export default function ActivityDetailsScreen() {
   const washerAvatar = (params.washerAvatar as string) || "";
   const date = (params.date as string) || "Aujourd'hui, 14:30";
   const price = parseInt((params.price as string) || "0", 10);
-  const rating = params.rating ? parseFloat(params.rating as string) : null;
+  const ratingParam = params.rating ? parseFloat(params.rating as string) : null;
+  const activityId = (params.id as string) || "";
+  const activity = useUserStore((state) => state.activities.find((item) => item.id === activityId));
+  const updateActivityRating = useUserStore((state) => state.updateActivityRating);
+  const existingRating = activity?.rating ?? ratingParam ?? null;
+  const [localRating, setLocalRating] = useState<number | null>(existingRating);
+  const [draftRating, setDraftRating] = useState<number>(existingRating ?? 0);
+
+  useEffect(() => {
+    setLocalRating(existingRating);
+    setDraftRating(existingRating ?? 0);
+  }, [existingRating]);
 
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.completed;
   const StatusIcon = statusConfig.icon;
@@ -103,7 +115,7 @@ export default function ActivityDetailsScreen() {
           {eta ? (
             <View style={styles.infoRow}>
               <Clock size={16} color={Colors.primary} />
-              <Text style={styles.infoText}>Arrivee estimee : {eta} min</Text>
+              <Text style={styles.infoText}>Arrivée estimée : {eta} min</Text>
             </View>
           ) : null}
           {address ? (
@@ -122,19 +134,57 @@ export default function ActivityDetailsScreen() {
           </View>
         </View>
 
-        {rating ? (
+        {localRating ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Votre note</Text>
             <View style={styles.ratingCard}>
               <Star size={16} color="#F59E0B" fill="#F59E0B" />
-              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+              <Text style={styles.ratingText}>{localRating.toFixed(1)}</Text>
+            </View>
+          </View>
+        ) : status === "completed" ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Noter le service</Text>
+            <View style={styles.rateInputCard}>
+              <View style={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <TouchableOpacity
+                    key={value}
+                    style={styles.starButton}
+                    onPress={() => setDraftRating(value)}
+                  >
+                    <Star
+                      size={22}
+                      color={value <= draftRating ? "#F59E0B" : "#D1D5DB"}
+                      fill={value <= draftRating ? "#F59E0B" : "transparent"}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.submitRatingButton,
+                  draftRating === 0 && styles.submitRatingDisabled,
+                ]}
+                disabled={draftRating === 0}
+                onPress={() => {
+                  setLocalRating(draftRating);
+                  if (activityId) {
+                    updateActivityRating(activityId, draftRating);
+                  }
+                }}
+              >
+                <Text style={styles.submitRatingText}>Valider</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
-          <TouchableOpacity style={styles.rateButton}>
-            <Star size={16} color="#F59E0B" />
-            <Text style={styles.rateText}>Évaluer le service</Text>
-          </TouchableOpacity>
+          <View style={styles.rateDisabled}>
+            <Star size={16} color="#D1D5DB" />
+            <Text style={styles.rateDisabledText}>
+              Évaluation disponible après la fin du lavage
+            </Text>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -325,20 +375,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#B45309",
   },
-  rateButton: {
+  rateInputCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.md,
+  },
+  starRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+  },
+  starButton: {
+    padding: 4,
+  },
+  submitRatingButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 999,
+    paddingVertical: 10,
+  },
+  submitRatingDisabled: {
+    backgroundColor: "#CBD5F5",
+  },
+  submitRatingText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  rateDisabled: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.sm,
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#F3F4F6",
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: "#E5E7EB",
   },
-  rateText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#F59E0B",
+  rateDisabledText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+    textAlign: "center",
   },
 });
