@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, Clock, MapPin } from 'lucide-react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { useUserStore } from '@/hooks/useUserData';
+import { createBooking, mobileLogin } from '@/lib/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -22,6 +23,9 @@ export default function ScheduleSuccessScreen() {
   const params = useLocalSearchParams();
   const addActivity = useUserStore((state) => state.addActivity);
   const activities = useUserStore((state) => state.activities);
+  const backendCustomerId = useUserStore((state) => state.backendCustomerId);
+  const phone = useUserStore((state) => state.phone);
+  const firstName = useUserStore((state) => state.firstName);
   const walletBalance = useUserStore((state) => state.walletBalance);
   const updateUserData = useUserStore((state) => state.updateUserData);
   const addWalletTransaction = useUserStore((state) => state.addWalletTransaction);
@@ -33,6 +37,7 @@ export default function ScheduleSuccessScreen() {
   const scheduledAt = params.scheduledAt ? decodeURIComponent(params.scheduledAt as string) : '';
   const activityIdRef = useRef(`sched-${Date.now()}`);
   const billedRef = useRef(false);
+  const bookingCreatedRef = useRef(false);
 
   const pieces = useMemo<ConfettiPiece[]>(
     () =>
@@ -65,6 +70,69 @@ export default function ScheduleSuccessScreen() {
   }, [confettiAnims, pieces]);
 
   useEffect(() => {
+    if (bookingCreatedRef.current) return;
+    bookingCreatedRef.current = true;
+
+    const syncBooking = async () => {
+      try {
+        let customerId = backendCustomerId;
+        if (!customerId) {
+          const login = await mobileLogin({
+            role: 'customer',
+            phone: phone || '+2250700000001',
+            name: firstName || 'Client',
+          });
+          customerId = login.user.id;
+          updateUserData('backendCustomerId', customerId);
+        }
+
+        const created = await createBooking({
+          customer_id: customerId as number,
+          service: washType || 'Lavage programme',
+          vehicle: vehicle || 'Vehicule',
+          wash_type_key:
+            washType.toLowerCase().includes('interieur')
+              ? 'interior'
+              : washType.toLowerCase().includes('complet')
+                ? 'complete'
+                : 'exterior',
+          address: address || 'Adresse non renseignee',
+          latitude: 5.3364,
+          longitude: -4.0267,
+          price,
+          scheduled_at: scheduledAt || "Aujourd'hui",
+        });
+        activityIdRef.current = String(created.booking.id);
+        if (!billedRef.current) {
+          billedRef.current = true;
+          updateUserData('walletBalance', created.customer_wallet_balance ?? Math.max(0, walletBalance - price));
+          addWalletTransaction({
+            id: `debit-${Date.now()}`,
+            type: 'debit',
+            title: `Programmation lavage - ${washType || 'Lavage'}`,
+            date: scheduledAt || "Aujourd'hui",
+            amount: price,
+          });
+        }
+      } catch {
+        if (!billedRef.current) {
+          billedRef.current = true;
+          updateUserData('walletBalance', Math.max(0, walletBalance - price));
+          addWalletTransaction({
+            id: `debit-${Date.now()}`,
+            type: 'debit',
+            title: `Programmation lavage - ${washType || 'Lavage'}`,
+            date: scheduledAt || "Aujourd'hui",
+            amount: price,
+          });
+        }
+      }
+    };
+
+    syncBooking();
+  }, [address, backendCustomerId, firstName, phone, price, scheduledAt, updateUserData, vehicle, washType]);
+
+  useEffect(() => {
     const activityId = activityIdRef.current;
     const exists = activities.some((item) => item.id === activityId);
     if (exists) return;
@@ -79,20 +147,6 @@ export default function ScheduleSuccessScreen() {
       rating: null,
     });
   }, [activities, addActivity, price, scheduledAt, vehicle, washType]);
-
-  useEffect(() => {
-    if (billedRef.current) return;
-    billedRef.current = true;
-    const nextBalance = Math.max(0, walletBalance - price);
-    updateUserData('walletBalance', nextBalance);
-    addWalletTransaction({
-      id: `debit-${Date.now()}`,
-      type: 'debit',
-      title: `Programmation lavage - ${washType || 'Lavage'}`,
-      date: scheduledAt || "Aujourd'hui",
-      amount: price,
-    });
-  }, [addWalletTransaction, price, scheduledAt, updateUserData, walletBalance, washType]);
 
   return (
     <SafeAreaView style={styles.container}>

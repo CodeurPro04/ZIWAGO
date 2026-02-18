@@ -46,11 +46,11 @@ export default function OnboardingStep1() {
               onPress={() => router.push("/auth/phone")}
             />
 
-            <Button
+            {/*<Button
               title="Je veux travailler comme laveur"
               onPress={() => {}}
               variant="secondary"
-            />
+            />*/}
           </View>
         </View>
       </View>

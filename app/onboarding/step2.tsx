@@ -12,14 +12,27 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useUserStore } from "@/hooks/useUserData";
 import { Colors, Spacing, Typography, BorderRadius } from "@/constants/theme";
+import { updateUserProfile } from "@/lib/api";
 
 export default function OnboardingStep2() {
   const router = useRouter();
-  const { firstName, lastName, email, updateUserData } = useUserStore();
+  const { firstName, lastName, email, backendCustomerId, updateUserData, setOnboardingCompleted } = useUserStore();
   const [accepted, setAccepted] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (firstName && lastName && accepted) {
+      if (backendCustomerId) {
+        try {
+          await updateUserProfile(backendCustomerId, {
+            first_name: firstName,
+            last_name: lastName,
+            email: email || undefined,
+          });
+        } catch {
+          // keep local data even if backend unavailable
+        }
+      }
+      setOnboardingCompleted(true);
       router.push("/(tabs)");
     }
   };

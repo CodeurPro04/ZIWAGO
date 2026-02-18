@@ -36,9 +36,7 @@ import SuvSvg from "@/assets/svg/suv.svg";
 import GroupSvg from "@/assets/svg/Group.svg";
 import Group5Svg from "@/assets/svg/Group5.svg";
 import Group7Svg from "@/assets/svg/Group7.svg";
-
-const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiY29kZXVycHJvMDQiLCJhIjoiY21jY2w4MW4zMDkxODJqcXNydWZkenBjYSJ9.d0SfKBeHypUYmQfJXjlR1Q";
+import { createBooking, mobileLogin } from "@/lib/api";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -139,6 +137,9 @@ export default function BookingNowScreen() {
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
   const {
+    backendCustomerId,
+    phone,
+    firstName,
     selectedLocation,
     selectedLocationCoords,
     selectedVehicle,
@@ -360,7 +361,7 @@ export default function BookingNowScreen() {
     }
   };
 
-  const handleRequest = () => {
+  const handleRequest = async () => {
     if (!selectedVehicle) {
       return;
     }
@@ -373,79 +374,89 @@ export default function BookingNowScreen() {
       return;
     }
 
-    const nextBalance = Math.max(0, walletBalance - selectedWash.price);
-    updateUserData("walletBalance", nextBalance);
-    addWalletTransaction({
-      id: `debit-${Date.now()}`,
-      type: "debit",
-      title: `Reservation lavage - ${selectedWash.title}`,
-      date: formatNow(),
-      amount: selectedWash.price,
-    });
+    try {
+      setIsSearchingWasher(true);
+      mapRef.current?.animateToRegion(
+        {
+          ...coords,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        },
+        500
+      );
 
-    if (foundTimerRef.current) {
-      clearTimeout(foundTimerRef.current);
-      foundTimerRef.current = null;
-    }
+      let customerId = backendCustomerId;
+      if (!customerId) {
+        const login = await mobileLogin({
+          role: "customer",
+          phone: phone || "+2250700000001",
+          name: firstName || "Client",
+        });
+        customerId = login.user.id;
+        updateUserData("backendCustomerId", customerId);
+      }
 
-    setIsWasherFound(false);
-    setFoundWasher(null);
-    setIsSearchingWasher(true);
-    mapRef.current?.animateToRegion(
-      {
-        ...coords,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      },
-      500
-    );
+      const created = await createBooking({
+        customer_id: customerId,
+        service: selectedWash.title,
+        vehicle: selectedVehicle,
+        wash_type_key: selectedWash.key as "exterior" | "interior" | "complete",
+        address,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        price: selectedWash.price,
+        scheduled_at: formatNow(),
+      });
 
-    foundTimerRef.current = setTimeout(() => {
-      const washerName = "Jean K.";
-      const scheduledLabel = formatNow();
-      const washerRating = 4.9;
-      const washerReviews = 247;
-      const washerPhone = "+225 07 07 07 07 07";
-      const washerEta = 7;
-      const bookingId = `bk-${Date.now()}`;
+      const booking = created.booking;
+      const nextBalance = created.customer_wallet_balance ?? Math.max(0, walletBalance - selectedWash.price);
+      updateUserData("walletBalance", nextBalance);
+      addWalletTransaction({
+        id: `debit-${Date.now()}`,
+        type: "debit",
+        title: `Reservation lavage - ${selectedWash.title}`,
+        date: formatNow(),
+        amount: selectedWash.price,
+      });
 
       addActivity({
-        id: bookingId,
+        id: String(booking.id),
         status: "pending",
         title: selectedWash.title,
         vehicle: selectedVehicle,
-        washer: washerName,
-        date: scheduledLabel,
+        washer: booking.driver?.name || "En attente",
+        date: formatNow(),
         price: selectedWash.price,
         rating: null,
       });
 
-      setIsSearchingWasher(false);
-      setIsWasherFound(true);
-      setFoundWasher({ name: washerName, eta: washerEta });
-      foundTimerRef.current = null;
-
       router.replace({
         pathname: "/booking/activity-details",
         params: {
-          id: bookingId,
+          id: String(booking.id),
           status: "pending",
           title: selectedWash.title,
           vehicle: selectedVehicle,
-          washer: washerName,
-          date: scheduledLabel,
+          washer: booking.driver?.name || "En attente",
+          date: formatNow(),
           price: selectedWash.price.toString(),
           rating: "",
-          washerPhone,
-          washerRating: washerRating.toString(),
-          washerReviews: washerReviews.toString(),
-          eta: washerEta.toString(),
+          washerPhone: booking.driver?.phone || "",
+          washerRating: "4.8",
+          washerReviews: "0",
+          eta: "8",
           address,
-          washerAvatar: "",
+          washerAvatar: booking.driver?.avatar_url || "",
           fromReservation: "1",
         },
       });
-    }, 5000);
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible d envoyer la demande au serveur.");
+    } finally {
+      setIsSearchingWasher(false);
+      setIsWasherFound(false);
+      setFoundWasher(null);
+    }
   };
 
   const handleCancelSearch = () => {

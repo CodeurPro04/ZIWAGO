@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,13 +17,14 @@ import {
   Car,
   Star,
   User,
-  Calendar,
   ChevronRight,
   Filter,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { useUserStore, ActivityItem } from '@/hooks/useUserData';
+import { cancelBooking, getCustomerBookings, mobileLogin } from '@/lib/api';
 
 const FILTERS = [
   { id: 'all', label: 'Tout' },
@@ -58,6 +59,11 @@ export default function ActivityScreen() {
   const router = useRouter();
   const activities = useUserStore((state) => state.activities);
   const updateActivityStatus = useUserStore((state) => state.updateActivityStatus);
+  const replaceActivities = useUserStore((state) => state.replaceActivities);
+  const backendCustomerId = useUserStore((state) => state.backendCustomerId);
+  const updateUserData = useUserStore((state) => state.updateUserData);
+  const phone = useUserStore((state) => state.phone);
+  const firstName = useUserStore((state) => state.firstName);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -78,9 +84,47 @@ export default function ActivityScreen() {
     return activities.filter((item) => item.status === selectedFilter);
   }, [selectedFilter, activities]);
 
+  const loadActivities = useCallback(async () => {
+    let customerId = backendCustomerId;
+    if (!customerId) {
+      const login = await mobileLogin({
+        role: 'customer',
+        phone: phone || '+2250700000001',
+        name: firstName || 'Client',
+      });
+      customerId = login.user.id;
+      updateUserData('backendCustomerId', customerId);
+    }
+
+    const response = await getCustomerBookings(customerId);
+    const mapped: ActivityItem[] = response.bookings.map((item) => ({
+      id: String(item.id),
+      status: item.status === 'completed' ? 'completed' : item.status === 'cancelled' ? 'cancelled' : 'pending',
+      title: item.service,
+      vehicle: item.vehicle,
+      washer: item.driver?.name || 'En attente',
+      date: item.scheduled_at || "Aujourd'hui",
+      price: item.price,
+      rating: item.customer_rating ? Number(item.customer_rating) : null,
+    }));
+    replaceActivities(mapped);
+  }, [backendCustomerId, firstName, phone, replaceActivities, updateUserData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadActivities().catch(() => undefined);
+      const interval = setInterval(() => {
+        loadActivities().catch(() => undefined);
+      }, 5000);
+      return () => clearInterval(interval);
+    }, [loadActivities])
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
+    loadActivities()
+      .catch(() => undefined)
+      .finally(() => setRefreshing(false));
   };
 
   const handleOpenDetails = (activity: ActivityItem) => {
@@ -95,8 +139,18 @@ export default function ActivityScreen() {
         date: activity.date,
         price: activity.price.toString(),
         rating: activity.rating ? activity.rating.toString() : '',
+        washerAvatar: '',
       },
     });
+  };
+
+  const handleCancel = async (activityId: string) => {
+    try {
+      await cancelBooking(activityId);
+      await loadActivities();
+    } catch {
+      updateActivityStatus(activityId, 'cancelled');
+    }
   };
 
   return (
@@ -195,7 +249,7 @@ export default function ActivityScreen() {
   <View style={styles.actionRow}>
     <TouchableOpacity
       style={[styles.actionButton, styles.cancelButton]}
-      onPress={() => updateActivityStatus(activity.id, 'cancelled')}
+      onPress={() => handleCancel(activity.id)}
     >
       <XCircle size={12} color="#EF4444" />
       <Text style={styles.cancelText}>Annuler</Text>

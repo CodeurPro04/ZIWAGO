@@ -1,10 +1,16 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface UserData {
+  onboardingCompleted: boolean;
+  backendCustomerId: number | null;
+  countryCode: string;
   phone: string;
   firstName: string;
   lastName: string;
   email: string;
+  avatarUrl: string;
   selectedLocation: string;
   selectedLocationCoords: { latitude: number; longitude: number } | null;
   selectedVehicle: 'Berline' | 'Compacte' | 'SUV';
@@ -17,10 +23,12 @@ interface UserData {
 interface UserStore extends UserData {
   updateUserData: (key: keyof UserData, value: any) => void;
   resetUserData: () => void;
+  setOnboardingCompleted: (value: boolean) => void;
   addActivity: (activity: ActivityItem) => void;
   updateActivityStatus: (id: string, status: ActivityItem['status']) => void;
   updateActivityRating: (id: string, rating: number) => void;
   addWalletTransaction: (transaction: WalletTransaction) => void;
+  replaceActivities: (activities: ActivityItem[]) => void;
 }
 
 type ActivityStatus = 'completed' | 'pending' | 'cancelled';
@@ -45,10 +53,14 @@ export type WalletTransaction = {
 };
 
 const initialState: UserData = {
+  onboardingCompleted: false,
+  backendCustomerId: null,
+  countryCode: '+225',
   phone: '',
   firstName: '',
   lastName: '',
   email: '',
+  avatarUrl: '',
   selectedLocation: 'Riviera 2 - Carrefour Duncan',
   selectedLocationCoords: null,
   selectedVehicle: 'Berline',
@@ -108,33 +120,48 @@ const initialState: UserData = {
   ],
 };
 
-export const useUserStore = create<UserStore>((set) => ({
-  ...initialState,
-  updateUserData: (key, value) =>
-    set((state) => ({ ...state, [key]: value })),
-  resetUserData: () => set(initialState),
-  addActivity: (activity) =>
-    set((state) => ({
-      ...state,
-      activities: [activity, ...state.activities],
-    })),
-  updateActivityStatus: (id, status) =>
-    set((state) => ({
-      ...state,
-      activities: state.activities.map((item) =>
-        item.id === id ? { ...item, status } : item
-      ),
-    })),
-  updateActivityRating: (id, rating) =>
-    set((state) => ({
-      ...state,
-      activities: state.activities.map((item) =>
-        item.id === id ? { ...item, rating } : item
-      ),
-    })),
-  addWalletTransaction: (transaction) =>
-    set((state) => ({
-      ...state,
-      walletTransactions: [transaction, ...state.walletTransactions],
-    })),
-}));
+export const useUserStore = create<UserStore>()(
+  persist(
+    (set) => ({
+      ...initialState,
+      updateUserData: (key, value) =>
+        set((state) => ({ ...state, [key]: value })),
+      setOnboardingCompleted: (value) =>
+        set((state) => ({ ...state, onboardingCompleted: value })),
+      resetUserData: () => set(initialState),
+      addActivity: (activity) =>
+        set((state) => ({
+          ...state,
+          activities: [activity, ...state.activities],
+        })),
+      updateActivityStatus: (id, status) =>
+        set((state) => ({
+          ...state,
+          activities: state.activities.map((item) =>
+            item.id === id ? { ...item, status } : item
+          ),
+        })),
+      updateActivityRating: (id, rating) =>
+        set((state) => ({
+          ...state,
+          activities: state.activities.map((item) =>
+            item.id === id ? { ...item, rating } : item
+          ),
+        })),
+      addWalletTransaction: (transaction) =>
+        set((state) => ({
+          ...state,
+          walletTransactions: [transaction, ...state.walletTransactions],
+        })),
+      replaceActivities: (activities) =>
+        set((state) => ({
+          ...state,
+          activities,
+        })),
+    }),
+    {
+      name: 'ZIWAGO_CLIENT_STATE_V1',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);

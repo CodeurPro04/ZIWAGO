@@ -200,9 +200,6 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>
               Bonjour{firstName ? `, ${firstName} ${lastName}` : ""} !
             </Text>
-            <Text style={styles.subGreeting}>
-              Prêt pour un lavage impeccable ?
-            </Text>
           </View>
         </View>
 
@@ -227,25 +224,6 @@ export default function HomeScreen() {
           <ChevronRight size={20} color={Colors.textSecondary} />
         </TouchableOpacity>
 
-        <View style={styles.heroCard}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>
-              Votre voiture, toujours impeccable.
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              Réservez un laveur en quelques secondes, où que vous soyez à
-              Abidjan.
-            </Text>
-            <TouchableOpacity
-              style={styles.heroButton}
-              onPress={() => router.push("/booking/vehicle-selection")}
-            >
-              <Text style={styles.heroButtonText}>Démarrer</Text>
-              <ChevronRight size={16} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Actions rapides</Text>
         </View>
@@ -263,42 +241,6 @@ export default function HomeScreen() {
               <Text style={styles.actionTitle}>{action.title}</Text>
               <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Offers Section
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Offres du moment</Text>
-          <TouchableOpacity onPress={() => router.push("/booking/vehicle-selection")}>
-            <Text style={styles.sectionLink}>Découvrir</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.offersRow}
-        >
-          {OFFERS.map((offer) => (
-            <View key={offer.id} style={styles.offerCard}>
-              <Text style={styles.offerTitle}>{offer.title}</Text>
-              <Text style={styles.offerSubtitle}>{offer.subtitle}</Text>
-              <Text style={styles.offerPrice}>{offer.price}</Text>
-            </View>
-          ))}
-        </ScrollView>  */}
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Pourquoi Ziwago</Text>
-        </View>
-        <View style={styles.highlightRow}>
-          {HIGHLIGHTS.map((item) => (
-            <View key={item.id} style={styles.highlightCard}>
-              <View style={styles.highlightIcon}>
-                <item.icon size={18} color={Colors.primary} />
-              </View>
-              <Text style={styles.highlightTitle}>{item.title}</Text>
-              <Text style={styles.highlightSubtitle}>{item.description}</Text>
-            </View>
           ))}
         </View>
 

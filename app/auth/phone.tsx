@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,50 +9,63 @@ import {
   FlatList,
   TouchableWithoutFeedback,
   Keyboard,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Input } from "@/components/Input";
-import { Button } from "@/components/Button";
-import { useUserStore } from "@/hooks/useUserData";
-import { Colors, Spacing, Typography, BorderRadius } from "@/constants/theme";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Input } from '@/components/Input';
+import { Button } from '@/components/Button';
+import { useUserStore } from '@/hooks/useUserData';
+import { Colors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const COUNTRIES = [
-  { code: "+225", flag: "🇨🇮", name: "Côte d'Ivoire", initials: "CI" },
-  { code: "+33", flag: "🇫🇷", name: "France", initials: "FR" },
-  { code: "+1", flag: "🇺🇸", name: "États-Unis", initials: "US" },
-  { code: "+44", flag: "🇬🇧", name: "Royaume-Uni", initials: "GB" },
-  { code: "+221", flag: "🇸🇳", name: "Sénégal", initials: "SN" },
-  { code: "+237", flag: "🇨🇲", name: "Cameroun", initials: "CM" },
-  { code: "+229", flag: "🇧🇯", name: "Bénin", initials: "BJ" },
-  { code: "+226", flag: "🇧🇫", name: "Burkina Faso", initials: "BF" },
+  { code: '+225', flag: 'CI', name: "Cote d'Ivoire", initials: 'CI' },
+  { code: '+33', flag: 'FR', name: 'France', initials: 'FR' },
+  { code: '+1', flag: 'US', name: 'Etats-Unis', initials: 'US' },
+  { code: '+44', flag: 'GB', name: 'Royaume-Uni', initials: 'GB' },
+  { code: '+221', flag: 'SN', name: 'Senegal', initials: 'SN' },
+  { code: '+237', flag: 'CM', name: 'Cameroun', initials: 'CM' },
+  { code: '+229', flag: 'BJ', name: 'Benin', initials: 'BJ' },
+  { code: '+226', flag: 'BF', name: 'Burkina Faso', initials: 'BF' },
 ];
 
 export default function PhoneScreen() {
   const router = useRouter();
-  const { phone, updateUserData } = useUserStore();
+  const { phone, countryCode, updateUserData } = useUserStore();
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handleContinue = () => {
-    if (phone.length >= 8) {
-      router.push("/auth/verification");
+  useEffect(() => {
+    const preselected = COUNTRIES.find((item) => item.code === countryCode);
+    if (preselected) {
+      setSelectedCountry(preselected);
     }
+  }, [countryCode]);
+
+  const handleContinue = () => {
+    if (phone.replace(/\D/g, '').length >= 8) {
+      router.push('/auth/verification');
+    }
+  };
+
+  const handlePhoneChange = (text: string) => {
+    const digits = text.replace(/\D/g, '').slice(0, 10);
+    updateUserData('phone', digits);
+  };
+
+  const handleCountrySelect = (item: (typeof COUNTRIES)[number]) => {
+    setSelectedCountry(item);
+    updateUserData('countryCode', item.code);
+    setModalVisible(false);
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.title}>
-            Entrez votre numéro de téléphone portable
-          </Text>
+          <Text style={styles.title}>Entrez votre numero de telephone portable</Text>
 
           <View style={styles.phoneInputContainer}>
-            <TouchableOpacity
-              style={styles.countryCode}
-              onPress={() => setModalVisible(true)}
-            >
+            <TouchableOpacity style={styles.countryCode} onPress={() => setModalVisible(true)}>
               <Text style={styles.flag}>{selectedCountry.flag}</Text>
               <Text style={styles.codeText}>{selectedCountry.code}</Text>
               <Icon name="chevron-down" size={20} color={Colors.text} />
@@ -64,7 +77,7 @@ export default function PhoneScreen() {
               placeholderTextColor={Colors.textSecondary}
               keyboardType="phone-pad"
               value={phone}
-              onChangeText={(text) => updateUserData("phone", text)}
+              onChangeText={handlePhoneChange}
               maxLength={10}
             />
           </View>
@@ -95,16 +108,14 @@ export default function PhoneScreen() {
           </TouchableOpacity>
 
           <Text style={styles.disclaimer}>
-            En continuant, vous acceptez de recevoir des appels, des messages
-            WhatsApp ou SMS de la part de Ziwago concernant vos commandes et mises
-            à jour. Vous pouvez vous désabonner à tout moment.
+            En continuant, vous acceptez de recevoir des appels, des messages WhatsApp ou SMS de la part
+            de Ziwago concernant vos commandes et mises a jour.
           </Text>
         </View>
 
-        {/* Modal de sélection de pays */}
         <Modal
           visible={modalVisible}
-          transparent={true}
+          transparent
           animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
@@ -113,7 +124,7 @@ export default function PhoneScreen() {
               <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Sélectionnez un pays</Text>
+                    <Text style={styles.modalTitle}>Selectionnez un pays</Text>
                     <TouchableOpacity onPress={() => setModalVisible(false)}>
                       <Icon name="close" size={24} color={Colors.text} />
                     </TouchableOpacity>
@@ -123,13 +134,7 @@ export default function PhoneScreen() {
                     data={COUNTRIES}
                     keyExtractor={(item) => item.code}
                     renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.countryItem}
-                        onPress={() => {
-                          setSelectedCountry(item);
-                          setModalVisible(false);
-                        }}
-                      >
+                      <TouchableOpacity style={styles.countryItem} onPress={() => handleCountrySelect(item)}>
                         <Text style={styles.countryFlag}>{item.flag}</Text>
                         <Text style={styles.countryName}>{item.name}</Text>
                         <Text style={styles.countryInitials}>({item.initials})</Text>
@@ -162,13 +167,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxl,
   },
   phoneInputContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginBottom: Spacing.xl,
     gap: Spacing.sm,
   },
   countryCode: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
@@ -176,18 +181,19 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   flag: {
-    fontSize: 24,
+    fontSize: 14,
+    fontWeight: '700',
   },
   codeText: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
     color: Colors.text,
   },
   phoneInput: {
     flex: 1,
   },
   divider: {
-    textAlign: "center",
+    textAlign: 'center',
     color: Colors.textSecondary,
     marginVertical: Spacing.md,
   },
@@ -198,61 +204,61 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   socialButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.sm,
   },
   socialButtonText: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
     color: Colors.text,
   },
   disclaimer: {
     fontSize: 12,
     color: Colors.textSecondary,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: Spacing.lg,
     lineHeight: 18,
   },
-  // Styles du modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: Colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: Spacing.lg,
-    maxHeight: "70%",
+    maxHeight: '70%',
   },
   modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: Colors.text,
   },
   countryItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
     gap: Spacing.sm,
   },
   countryFlag: {
-    fontSize: 24,
+    fontSize: 14,
+    fontWeight: '700',
   },
   countryName: {
     flex: 1,
@@ -265,7 +271,7 @@ const styles = StyleSheet.create({
   },
   countryCodeText: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
     color: Colors.primary,
   },
 });

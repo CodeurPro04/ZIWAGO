@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,26 @@ import {
   TouchableOpacity,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '@/hooks/useUserData';
-import { Colors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { healthCheck, mobileLogin } from '@/lib/api';
 
 export default function VerificationScreen() {
   const router = useRouter();
-  const { phone } = useUserStore(); // Récupérer le numéro de téléphone
+  const { phone, countryCode, firstName, updateUserData } = useUserStore();
   const [code, setCode] = useState(['', '', '', '']);
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [loading, setLoading] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  // Compteur
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
 
     if (timer > 0 && !canResend) {
       interval = setInterval(() => {
@@ -34,29 +37,54 @@ export default function VerificationScreen() {
       setCanResend(true);
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [timer, canResend]);
 
+  const fullPhone = `${countryCode}${phone}`.replace(/\s+/g, '');
+
+  const submitVerification = async (pin: string[]) => {
+    if (pin.join('').length !== 4) return;
+
+    setLoading(true);
+    try {
+      await healthCheck();
+      const login = await mobileLogin({
+        phone: fullPhone,
+        role: 'customer',
+        name: firstName || 'Client',
+      });
+
+      updateUserData('backendCustomerId', login.user.id);
+      updateUserData('walletBalance', login.user.wallet_balance ?? 0);
+      updateUserData('phone', fullPhone);
+      updateUserData('avatarUrl', login.user.avatar_url ?? '');
+
+      router.replace('/onboarding/step2');
+    } catch {
+      Alert.alert('Connexion impossible', 'Le backend ne repond pas. Verifiez le serveur Laravel et l URL API.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCodeChange = (text: string, index: number) => {
-    // Accepter seulement les chiffres
     if (text && !/^\d+$/.test(text)) return;
 
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
 
-    // Auto-focus sur l'input suivant
     if (text && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit quand tout est rempli
     if (newCode.every((digit) => digit !== '') && index === 3) {
       Keyboard.dismiss();
       setTimeout(() => {
-        // Vérification du code ici
-        router.push('/onboarding/step2');
-      }, 300);
+        submitVerification(newCode);
+      }, 150);
     }
   };
 
@@ -67,14 +95,11 @@ export default function VerificationScreen() {
   };
 
   const handleResendCode = () => {
-    if (canResend) {
-      // Logique pour renvoyer le code
-      console.log('Code renvoyé');
-      setCode(['', '', '', '']);
-      setTimer(60);
-      setCanResend(false);
-      inputRefs.current[0]?.focus();
-    }
+    if (!canResend) return;
+    setCode(['', '', '', '']);
+    setTimer(60);
+    setCanResend(false);
+    inputRefs.current[0]?.focus();
   };
 
   const formatTime = (seconds: number) => {
@@ -83,46 +108,31 @@ export default function VerificationScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Formater le numéro de téléphone pour l'affichage
-  const formatPhoneNumber = (phoneNumber: string) => {
-    // Ajouter des espaces pour une meilleure lisibilité
-    if (phoneNumber.length === 10) {
-      return phoneNumber.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
-    }
-    return phoneNumber;
-  };
+  const displayPhone = `${countryCode} ${phone}`.trim();
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          {/* En-tête avec icône */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <Icon name="message-text-outline" size={60} color={Colors.primary} />
             </View>
           </View>
 
-          <Text style={styles.title}>Vérification</Text>
+          <Text style={styles.title}>Verification</Text>
           <Text style={styles.subtitle}>
-            Entrez le code à 4 chiffres envoyé au{'\n'}
-            <Text style={styles.phoneNumber}>
-              +225 {formatPhoneNumber(phone)}
-            </Text>
+            Entrez le code a 4 chiffres envoye au{`\n`}
+            <Text style={styles.phoneNumber}>{displayPhone}</Text>
           </Text>
 
-          {/* Inputs du code */}
           <View style={styles.codeInputContainer}>
             {[0, 1, 2, 3].map((index) => (
-              <View
-                key={index}
-                style={[
-                  styles.codeBox,
-                  code[index] && styles.codeBoxFilled,
-                ]}
-              >
+              <View key={index} style={[styles.codeBox, code[index] && styles.codeBoxFilled]}>
                 <TextInput
-                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  ref={(ref) => {
+                    inputRefs.current[index] = ref;
+                  }}
                   style={styles.codeInput}
                   maxLength={1}
                   keyboardType="number-pad"
@@ -136,36 +146,20 @@ export default function VerificationScreen() {
             ))}
           </View>
 
-          {/* Section renvoyer le code */}
+          {loading ? <ActivityIndicator size="small" color={Colors.primary} /> : null}
+
           <View style={styles.resendSection}>
-            <Text style={styles.resendText}>
-              Vous n&lsquo;avez pas reçu le code ?
-            </Text>
-            <TouchableOpacity
-              onPress={handleResendCode}
-              disabled={!canResend}
-              style={styles.resendButton}
-            >
-              <Text
-                style={[
-                  styles.resendButtonText,
-                  !canResend && styles.resendButtonTextDisabled,
-                ]}
-              >
+            <Text style={styles.resendText}>Vous n avez pas recu le code ?</Text>
+            <TouchableOpacity onPress={handleResendCode} disabled={!canResend} style={styles.resendButton}>
+              <Text style={[styles.resendButtonText, !canResend && styles.resendButtonTextDisabled]}>
                 {canResend ? 'Renvoyer le code' : `Renvoyer (${formatTime(timer)})`}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Lien pour changer de numéro */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.changeNumberButton}
-          >
+          <TouchableOpacity onPress={() => router.back()} style={styles.changeNumberButton}>
             <Icon name="phone-refresh" size={20} color={Colors.primary} />
-            <Text style={styles.changeNumberText}>
-              Changer de numéro de téléphone
-            </Text>
+            <Text style={styles.changeNumberText}>Changer de numero de telephone</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -216,7 +210,7 @@ const styles = StyleSheet.create({
   codeInputContainer: {
     flexDirection: 'row',
     gap: Spacing.md,
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.xl,
     paddingHorizontal: Spacing.sm,
   },
   codeBox: {
@@ -242,6 +236,7 @@ const styles = StyleSheet.create({
   },
   resendSection: {
     alignItems: 'center',
+    marginTop: Spacing.lg,
     marginBottom: Spacing.xl,
   },
   resendText: {
