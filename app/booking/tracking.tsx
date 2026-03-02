@@ -6,6 +6,27 @@ import { Button } from '@/components/Button';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { useUserStore } from '@/hooks/useUserData';
 
+const toDateOnlyLabel = (raw?: string) => {
+  const now = new Date();
+  const value = (raw || '').trim();
+  const lower = value.toLowerCase();
+
+  if (!value || lower.includes("aujourd")) {
+    return now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  if (lower.includes('demain')) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    return tomorrow.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  return value;
+};
+
 export default function TrackingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -23,16 +44,14 @@ export default function TrackingScreen() {
   const washType = decodeURIComponent((params.washType as string) || 'Extérieur uniquement');
   const price = parseInt((params.price as string) || '2000', 10);
   const scheduledAt = params.scheduledAt ? decodeURIComponent(params.scheduledAt as string) : null;
+  const scheduledAtLabel = scheduledAt ? toDateOnlyLabel(scheduledAt) : null;
 
   const bookingIdRef = useRef((params.bookingId as string) || `bk-${Date.now()}`);
   const bookingId = bookingIdRef.current;
 
   useEffect(() => {
     if (activities.some((item) => item.id === bookingId)) return;
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const dateLabel = `Aujourd'hui, ${hours}:${minutes}`;
+    const dateLabel = toDateOnlyLabel();
 
     addActivity({
       id: bookingId,
@@ -146,10 +165,10 @@ export default function TrackingScreen() {
             <Sparkles size={16} color={Colors.primary} />
             <Text style={styles.summaryText}>{washType}</Text>
           </View>
-          {scheduledAt && (
+          {scheduledAtLabel && (
             <View style={styles.summaryRow}>
               <Clock size={16} color={Colors.primary} />
-              <Text style={styles.summaryText}>{scheduledAt}</Text>
+              <Text style={styles.summaryText}>{scheduledAtLabel}</Text>
             </View>
           )}
           <View style={styles.priceRow}>
@@ -401,3 +420,4 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
 });
+

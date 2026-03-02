@@ -1,5 +1,17 @@
 import Constants from 'expo-constants';
 
+export class ApiError extends Error {
+  status: number;
+  details: unknown;
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.details = details;
+  }
+}
+
 const resolveApiBaseUrl = () => {
   const explicit = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
   if (explicit) return explicit.replace(/\/$/, '');
@@ -64,6 +76,14 @@ type MobileUser = {
   account_step?: number;
 };
 
+type AuthProvider = 'phone' | 'email' | 'google' | 'apple';
+type AuthSession = {
+  user: MobileUser;
+  token?: string | null;
+  provider: AuthProvider;
+  is_new_user?: boolean;
+};
+
 type BookingPayload = {
   customer_id: number;
   service: string;
@@ -81,6 +101,25 @@ const normalizeMobileUser = (user: MobileUser): MobileUser => ({
   ...user,
   avatar_url: absolutizeMediaUrl(user.avatar_url),
 });
+
+const normalizeAuthSession = (
+  raw: any,
+  provider: AuthProvider
+): AuthSession => {
+  const user = normalizeMobileUser(raw?.user || raw);
+  const token =
+    raw?.token ||
+    raw?.access_token ||
+    raw?.auth_token ||
+    null;
+
+  return {
+    user,
+    token,
+    provider,
+    is_new_user: Boolean(raw?.is_new_user),
+  };
+};
 
 const normalizeBooking = (booking: any) => {
   if (!booking || typeof booking !== 'object') return booking;
@@ -117,7 +156,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data?.message || `Erreur API (${response.status})`);
+    throw new ApiError(data?.message || `Erreur API (${response.status})`, response.status, data);
   }
 
   return data as T;
@@ -139,6 +178,79 @@ export async function mobileLogin(payload: {
   return { ...response, user: normalizeMobileUser(response.user) };
 }
 
+export async function requestPhoneOtp(payload: { phone: string; country_code: string }) {
+  return apiRequest<{ success: boolean; message?: string; ttl?: number }>('/auth/otp/send', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function verifyPhoneOtp(payload: {
+  phone: string;
+  country_code: string;
+  code: string;
+  role?: 'customer' | 'driver';
+  name?: string;
+}) {
+  const response = await apiRequest<any>('/auth/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeAuthSession(response, 'phone');
+}
+
+export async function registerWithEmail(payload: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  role?: 'customer' | 'driver';
+}) {
+  const response = await apiRequest<any>('/auth/email/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeAuthSession(response, 'email');
+}
+
+export async function loginWithEmail(payload: {
+  email: string;
+  password: string;
+  role?: 'customer' | 'driver';
+}) {
+  const response = await apiRequest<any>('/auth/email/login', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeAuthSession(response, 'email');
+}
+
+export function buildOAuthStartUrl(provider: 'google' | 'apple', redirectUri: string, state: string) {
+  const params = new URLSearchParams({
+    provider,
+    redirect_uri: redirectUri,
+    state,
+    platform: 'mobile',
+    role: 'customer',
+  });
+  return `${API_BASE_URL}/auth/oauth/start?${params.toString()}`;
+}
+
+export async function completeOAuth(payload: {
+  provider: 'google' | 'apple';
+  code?: string | null;
+  id_token?: string | null;
+  access_token?: string | null;
+  redirect_uri: string;
+  state?: string | null;
+}) {
+  const response = await apiRequest<any>('/auth/oauth/mobile-complete', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeAuthSession(response, payload.provider);
+}
+
 export async function createBooking(payload: BookingPayload) {
   const response = await apiRequest<{ booking: any; customer_wallet_balance: number }>('/bookings', {
     method: 'POST',
@@ -152,10 +264,16 @@ export async function getCustomerBookings(customerId: number) {
   return { ...response, bookings: response.bookings.map((item) => normalizeBooking(item)) };
 }
 
-export async function cancelBooking(bookingId: string | number) {
+export async function cancelBooking(
+  bookingId: string | number,
+  payload: { customer_id: number; reason?: string }
+) {
   const response = await apiRequest<{ booking: any }>(`/bookings/${bookingId}/cancel`, {
     method: 'PATCH',
-    body: JSON.stringify({ reason: 'cancelled_from_app' }),
+    body: JSON.stringify({
+      customer_id: payload.customer_id,
+      reason: payload.reason || 'cancelled_from_app',
+    }),
   });
   return { ...response, booking: normalizeBooking(response.booking) };
 }
@@ -214,4 +332,4 @@ export async function uploadUserAvatar(userId: number, uri: string) {
   return { ...response, user: normalizeMobileUser(response.user) };
 }
 
-export { API_BASE_URL };
+export { API_BASE_URL, API_ORIGIN };

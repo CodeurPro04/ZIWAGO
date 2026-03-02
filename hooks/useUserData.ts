@@ -4,6 +4,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface UserData {
   onboardingCompleted: boolean;
+  isAuthenticated: boolean;
+  authProvider: 'phone' | 'email' | 'google' | 'apple' | null;
+  authToken: string | null;
+  biometricEnabled: boolean;
   backendCustomerId: number | null;
   countryCode: string;
   phone: string;
@@ -18,6 +22,7 @@ interface UserData {
   walletBalance: number;
   walletTransactions: WalletTransaction[];
   activities: ActivityItem[];
+  realtimeVersion: number;
 }
 
 interface UserStore extends UserData {
@@ -25,10 +30,11 @@ interface UserStore extends UserData {
   resetUserData: () => void;
   setOnboardingCompleted: (value: boolean) => void;
   addActivity: (activity: ActivityItem) => void;
-  updateActivityStatus: (id: string, status: ActivityItem['status']) => void;
+  updateActivityStatus: (id: string, bookingStatus: string) => void;
   updateActivityRating: (id: string, rating: number) => void;
   addWalletTransaction: (transaction: WalletTransaction) => void;
   replaceActivities: (activities: ActivityItem[]) => void;
+  touchRealtime: () => void;
 }
 
 type ActivityStatus = 'completed' | 'pending' | 'cancelled';
@@ -36,6 +42,7 @@ type ActivityStatus = 'completed' | 'pending' | 'cancelled';
 export interface ActivityItem {
   id: string;
   status: ActivityStatus;
+  bookingStatus?: string;
   title: string;
   vehicle: string;
   washer: string;
@@ -52,8 +59,18 @@ export type WalletTransaction = {
   amount: number;
 };
 
+const toUiActivityStatus = (bookingStatus?: string): ActivityStatus => {
+  if (bookingStatus === 'completed') return 'completed';
+  if (bookingStatus === 'cancelled') return 'cancelled';
+  return 'pending';
+};
+
 const initialState: UserData = {
   onboardingCompleted: false,
+  isAuthenticated: false,
+  authProvider: null,
+  authToken: null,
+  biometricEnabled: false,
   backendCustomerId: null,
   countryCode: '+225',
   phone: '',
@@ -103,7 +120,7 @@ const initialState: UserData = {
       title: 'Lavage complet',
       vehicle: 'Compacte',
       washer: 'Jean D.',
-      date: "Aujourd'hui, 14:30",
+      date: "Aujourd'hui",
       price: 4500,
       rating: 5,
     },
@@ -118,6 +135,7 @@ const initialState: UserData = {
       rating: null,
     },
   ],
+  realtimeVersion: 0,
 };
 
 export const useUserStore = create<UserStore>()(
@@ -128,17 +146,23 @@ export const useUserStore = create<UserStore>()(
         set((state) => ({ ...state, [key]: value })),
       setOnboardingCompleted: (value) =>
         set((state) => ({ ...state, onboardingCompleted: value })),
-      resetUserData: () => set(initialState),
+      resetUserData: () =>
+        set((state) => ({
+          ...initialState,
+          onboardingCompleted: state.onboardingCompleted,
+        })),
       addActivity: (activity) =>
         set((state) => ({
           ...state,
           activities: [activity, ...state.activities],
         })),
-      updateActivityStatus: (id, status) =>
+      updateActivityStatus: (id, bookingStatus) =>
         set((state) => ({
           ...state,
           activities: state.activities.map((item) =>
-            item.id === id ? { ...item, status } : item
+            item.id === id
+              ? { ...item, bookingStatus, status: toUiActivityStatus(bookingStatus) }
+              : item
           ),
         })),
       updateActivityRating: (id, rating) =>
@@ -157,6 +181,11 @@ export const useUserStore = create<UserStore>()(
         set((state) => ({
           ...state,
           activities,
+        })),
+      touchRealtime: () =>
+        set((state) => ({
+          ...state,
+          realtimeVersion: state.realtimeVersion + 1,
         })),
     }),
     {

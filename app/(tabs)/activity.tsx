@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   RefreshControl,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   Clock,
@@ -34,6 +35,45 @@ const FILTERS = [
   { id: 'cancelled', label: 'Annulés' },
 ];
 
+const toDateOnlyLabel = (raw?: string) => {
+  const now = new Date();
+  const value = (raw || '').trim();
+  const lower = value.toLowerCase();
+
+  if (!value || lower.includes("aujourd")) {
+    return now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  if (lower.includes('demain')) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    return tomorrow.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  return value;
+};
+
+const isTodayDate = (raw?: string) => {
+  const value = (raw || '').trim();
+  if (!value) return false;
+  if (value.toLowerCase().includes("aujourd")) return true;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return toDateOnlyLabel(value) === toDateOnlyLabel();
+  }
+
+  const now = new Date();
+  return (
+    parsed.getFullYear() === now.getFullYear() &&
+    parsed.getMonth() === now.getMonth() &&
+    parsed.getDate() === now.getDate()
+  );
+};
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   completed: {
     label: 'Terminé',
@@ -55,13 +95,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   },
 };
 
+const CANCELLABLE_BOOKING_STATUSES = new Set(['pending', 'accepted', 'en_route']);
+
 export default function ActivityScreen() {
   const router = useRouter();
   const activities = useUserStore((state) => state.activities);
-  const updateActivityStatus = useUserStore((state) => state.updateActivityStatus);
   const replaceActivities = useUserStore((state) => state.replaceActivities);
   const backendCustomerId = useUserStore((state) => state.backendCustomerId);
   const updateUserData = useUserStore((state) => state.updateUserData);
+  const realtimeVersion = useUserStore((state) => state.realtimeVersion);
   const phone = useUserStore((state) => state.phone);
   const firstName = useUserStore((state) => state.firstName);
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -79,7 +121,7 @@ export default function ActivityScreen() {
   const filteredActivities = useMemo(() => {
     if (selectedFilter === 'all') return activities;
     if (selectedFilter === 'today') {
-      return activities.filter((item) => item.date.includes("Aujourd'hui"));
+      return activities.filter((item) => isTodayDate(item.date));
     }
     return activities.filter((item) => item.status === selectedFilter);
   }, [selectedFilter, activities]);
@@ -100,10 +142,11 @@ export default function ActivityScreen() {
     const mapped: ActivityItem[] = response.bookings.map((item) => ({
       id: String(item.id),
       status: item.status === 'completed' ? 'completed' : item.status === 'cancelled' ? 'cancelled' : 'pending',
+      bookingStatus: item.status,
       title: item.service,
       vehicle: item.vehicle,
       washer: item.driver?.name || 'En attente',
-      date: item.scheduled_at || "Aujourd'hui",
+      date: toDateOnlyLabel(item.scheduled_at),
       price: item.price,
       rating: item.customer_rating ? Number(item.customer_rating) : null,
     }));
@@ -115,10 +158,14 @@ export default function ActivityScreen() {
       loadActivities().catch(() => undefined);
       const interval = setInterval(() => {
         loadActivities().catch(() => undefined);
-      }, 5000);
+      }, 20000);
       return () => clearInterval(interval);
     }, [loadActivities])
   );
+
+  useEffect(() => {
+    loadActivities().catch(() => undefined);
+  }, [realtimeVersion, loadActivities]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -144,12 +191,34 @@ export default function ActivityScreen() {
     });
   };
 
-  const handleCancel = async (activityId: string) => {
+  const canCancelActivity = (activity: ActivityItem) => {
+    const bookingStatus = activity.bookingStatus || activity.status;
+    return CANCELLABLE_BOOKING_STATUSES.has(bookingStatus);
+  };
+
+  const handleCancel = async (activity: ActivityItem) => {
+    if (!canCancelActivity(activity)) {
+      Alert.alert('Annulation impossible', 'La mission a deja demarre, elle ne peut plus etre annulee.');
+      return;
+    }
     try {
-      await cancelBooking(activityId);
+      let customerId = backendCustomerId;
+      if (!customerId) {
+        const login = await mobileLogin({
+          role: 'customer',
+          phone: phone || '+2250700000001',
+          name: firstName || 'Client',
+        });
+        customerId = login.user.id;
+        updateUserData('backendCustomerId', customerId);
+      }
+
+      await cancelBooking(activity.id, { customer_id: customerId });
       await loadActivities();
-    } catch {
-      updateActivityStatus(activityId, 'cancelled');
+    } catch (error: any) {
+      const message = error?.message || 'Impossible d annuler cette mission pour le moment.';
+      Alert.alert('Annulation refusee', message);
+      await loadActivities().catch(() => undefined);
     }
   };
 
@@ -245,11 +314,11 @@ export default function ActivityScreen() {
 
                 <View style={styles.cardFooter}>
                   <Text style={styles.priceText}>{activity.price.toLocaleString()} FCFA</Text>
-                  {activity.status === 'pending' ? (
+                  {activity.status === 'pending' && canCancelActivity(activity) ? (
   <View style={styles.actionRow}>
     <TouchableOpacity
       style={[styles.actionButton, styles.cancelButton]}
-      onPress={() => handleCancel(activity.id)}
+      onPress={() => handleCancel(activity)}
     >
       <XCircle size={12} color="#EF4444" />
       <Text style={styles.cancelText}>Annuler</Text>
@@ -515,3 +584,4 @@ const styles = StyleSheet.create({
     height: 80,
   },
 });
+

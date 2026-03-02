@@ -8,7 +8,7 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import {
   MapPin,
   Calendar,
@@ -24,7 +24,14 @@ import * as Location from "expo-location";
 import { useUserStore } from "@/hooks/useUserData";
 import { Colors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 
-const QUICK_ACTIONS = [
+const QUICK_ACTIONS: Array<{
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: React.ComponentType<{ width?: number; height?: number }>;
+  action: Href;
+  tone: string;
+}> = [
   {
     id: "instant",
     title: "Réserver maintenant",

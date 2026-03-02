@@ -43,7 +43,7 @@ export default function OnboardingStep1() {
           <View style={styles.buttonsContainer}>
             <Button
               title="Je veux réserver un lavage de voiture"
-              onPress={() => router.push("/auth/phone")}
+              onPress={() => router.push("/auth/email")}
             />
 
             {/*<Button

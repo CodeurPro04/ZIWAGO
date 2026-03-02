@@ -17,6 +17,8 @@ type TimeSlot = {
   id: string;
   label: string;
   hint: string;
+  startHour: number;
+  startMinute: number;
 };
 
 const WASH_TYPES = {
@@ -34,10 +36,10 @@ const WASH_TYPE_OPTIONS = [
 
 
 const TIME_SLOTS: TimeSlot[] = [
-  { id: 'morning', label: '08:00 - 10:00', hint: 'Meilleure disponibilit\u00e9' },
-  { id: 'late-morning', label: '10:30 - 12:30', hint: 'Tr\u00e8s demand\u00e9' },
-  { id: 'afternoon', label: '14:00 - 16:00', hint: 'Recommand\u00e9' },
-  { id: 'evening', label: '17:00 - 19:00', hint: 'Fin de journ\u00e9e' },
+  { id: 'morning', label: '08:00 - 10:00', hint: 'Meilleure disponibilit\u00e9', startHour: 8, startMinute: 0 },
+  { id: 'late-morning', label: '10:30 - 12:30', hint: 'Tr\u00e8s demand\u00e9', startHour: 10, startMinute: 30 },
+  { id: 'afternoon', label: '14:00 - 16:00', hint: 'Recommand\u00e9', startHour: 14, startMinute: 0 },
+  { id: 'evening', label: '17:00 - 19:00', hint: 'Fin de journ\u00e9e', startHour: 17, startMinute: 0 },
 ];
 const VEHICLES = [
   { key: 'Berline', label: 'Berline', icon: BerlineSvg },
@@ -80,6 +82,15 @@ export default function ScheduleScreen() {
     ? washConfig.price + 1000
     : washConfig.price;
 
+  const buildScheduledIso = (dayOffset: number, slot: TimeSlot) => {
+    const now = new Date();
+    const scheduled = new Date(now);
+    scheduled.setSeconds(0, 0);
+    scheduled.setDate(now.getDate() + dayOffset);
+    scheduled.setHours(slot.startHour, slot.startMinute, 0, 0);
+    return scheduled.toISOString();
+  };
+
   const handleSchedule = () => {
     if (!selectedWashType) {
       Alert.alert('Choix requis', 'Veuillez choisir un type de lavage avant de programmer.');
@@ -97,7 +108,8 @@ export default function ScheduleScreen() {
 
 
     const day = days[selectedDayIndex];
-    const scheduledAt = `${day.fullLabel} - ${selectedSlot.label}`;
+    const scheduledAtLabel = `${day.fullLabel} - ${selectedSlot.label}`;
+    const scheduledAtIso = buildScheduledIso(selectedDayIndex, selectedSlot);
 
     router.push({
       pathname: '/booking/schedule-success',
@@ -106,7 +118,8 @@ export default function ScheduleScreen() {
         vehicle: encodeURIComponent(selectedVehicle),
         washType: encodeURIComponent(washConfig.title),
         price: selectedSlotPrice.toString(),
-        scheduledAt: encodeURIComponent(scheduledAt),
+        scheduledAt: encodeURIComponent(scheduledAtLabel),
+        scheduledAtIso: encodeURIComponent(scheduledAtIso),
       },
     });
   };

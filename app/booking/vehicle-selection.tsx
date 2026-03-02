@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   Animated,
   Easing,
   Alert,
+  PanResponder,
 } from "react-native";
 import { useRouter } from "expo-router";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
@@ -36,7 +37,7 @@ import SuvSvg from "@/assets/svg/suv.svg";
 import GroupSvg from "@/assets/svg/Group.svg";
 import Group5Svg from "@/assets/svg/Group5.svg";
 import Group7Svg from "@/assets/svg/Group7.svg";
-import { createBooking, mobileLogin } from "@/lib/api";
+import { cancelBooking, createBooking, getBooking, mobileLogin } from "@/lib/api";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -80,7 +81,31 @@ const MAP_STYLE = [
   },
 ];
 
-const SHEET_EXPANDED_HEIGHT = Math.min(560, SCREEN_HEIGHT * 0.65);
+const SHEET_HEIGHT_COMPACT = Math.min(360, SCREEN_HEIGHT * 0.42);
+const SHEET_HEIGHT_REGULAR = Math.min(520, SCREEN_HEIGHT * 0.58);
+const SHEET_HEIGHT_MIN = Math.min(250, SCREEN_HEIGHT * 0.30);
+const SHEET_HEIGHT_MAX = Math.min(680, SCREEN_HEIGHT * 0.78);
+
+const toDateOnlyLabel = (raw?: string) => {
+  const now = new Date();
+  const value = (raw || "").trim();
+  const lower = value.toLowerCase();
+
+  if (!value || lower.includes("aujourd")) {
+    return now.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+  if (lower.includes("demain")) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    return tomorrow.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+  return value;
+};
 
 const VEHICLES = [
   {
@@ -148,10 +173,15 @@ export default function BookingNowScreen() {
     updateUserData,
     addWalletTransaction,
     addActivity,
+    updateActivityStatus,
+    realtimeVersion,
   } = useUserStore();
 
   const [coords, setCoords] = useState(
     selectedLocationCoords || { latitude: 5.3364, longitude: -4.0267 }
+  );
+  const [clientCoords, setClientCoords] = useState<{ latitude: number; longitude: number } | null>(
+    selectedLocationCoords || null
   );
   const [address, setAddress] = useState(selectedLocation);
   const [isLoadingLocation, setIsLoadingLocation] = useState(!selectedLocationCoords);
@@ -160,22 +190,118 @@ export default function BookingNowScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [isSearchingWasher, setIsSearchingWasher] = useState(false);
-  const [isWasherFound, setIsWasherFound] = useState(false);
   const [searchElapsed, setSearchElapsed] = useState(0);
-  const [foundWasher, setFoundWasher] = useState<{ name: string; eta: number } | null>(null);
-  const foundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const bookingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bookingPollBusyRef = useRef(false);
+  const hasNavigatedToDetailsRef = useRef(false);
+  const [sheetHeight, setSheetHeight] = useState(SHEET_HEIGHT_COMPACT);
+  const [hasUserResizedSheet, setHasUserResizedSheet] = useState(false);
+  const dragStartHeightRef = useRef(SHEET_HEIGHT_COMPACT);
+  const sheetHeightRef = useRef(SHEET_HEIGHT_COMPACT);
 
   const selectedWash = useMemo(
     () => WASH_TYPES.find((wash) => wash.key === selectedWashType) || WASH_TYPES[0],
     [selectedWashType]
   );
+  const activeSheetHeight = useMemo(
+    () => (stepIndex === 0 ? SHEET_HEIGHT_COMPACT : SHEET_HEIGHT_REGULAR),
+    [stepIndex]
+  );
 
-  const formatNow = () => {
-    const now = new Date();
-    const time = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-    return `Aujourd'hui, ${time}`;
+  const clampSheetHeight = (height: number) =>
+    Math.min(SHEET_HEIGHT_MAX, Math.max(SHEET_HEIGHT_MIN, height));
+
+  const snapSheetHeight = (height: number) => {
+    const anchors = Array.from(
+      new Set([SHEET_HEIGHT_MIN, SHEET_HEIGHT_COMPACT, SHEET_HEIGHT_REGULAR, SHEET_HEIGHT_MAX])
+    ).sort((a, b) => a - b);
+    return anchors.reduce((closest, value) =>
+      Math.abs(value - height) < Math.abs(closest - height) ? value : closest
+    );
   };
+
+  const sheetPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 2,
+        onMoveShouldSetPanResponderCapture: (_, gestureState) => Math.abs(gestureState.dy) > 2,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: () => {
+          setHasUserResizedSheet(true);
+          dragStartHeightRef.current = sheetHeightRef.current;
+        },
+        onPanResponderMove: (_, gestureState) => {
+          const nextHeight = clampSheetHeight(dragStartHeightRef.current - gestureState.dy);
+          setSheetHeight(nextHeight);
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          const nextHeight = clampSheetHeight(dragStartHeightRef.current - gestureState.dy);
+          setSheetHeight(snapSheetHeight(nextHeight));
+        },
+        onPanResponderTerminate: () => {
+          setSheetHeight((prev) => snapSheetHeight(prev));
+        },
+      }),
+    []
+  );
+
+  const formatNow = () => toDateOnlyLabel();
+
+  const handleLiveBookingUpdate = useCallback(
+    async (bookingId: string, latest: any) => {
+      const latestStatus = String(latest?.status || "pending");
+
+      if (latestStatus === "cancelled") {
+        if (bookingPollRef.current) {
+          clearInterval(bookingPollRef.current);
+          bookingPollRef.current = null;
+        }
+        setIsSearchingWasher(false);
+        setActiveBookingId(null);
+        updateActivityStatus(bookingId, "cancelled");
+        Alert.alert("Course annulee", "La course a ete annulee.");
+        return;
+      }
+
+      const acceptedStates = ["accepted", "arrived", "washing", "completed"];
+      if (acceptedStates.includes(latestStatus) && !hasNavigatedToDetailsRef.current) {
+        hasNavigatedToDetailsRef.current = true;
+        if (bookingPollRef.current) {
+          clearInterval(bookingPollRef.current);
+          bookingPollRef.current = null;
+        }
+        setIsSearchingWasher(false);
+        setActiveBookingId(null);
+        updateActivityStatus(bookingId, latestStatus);
+
+        router.replace({
+          pathname: "/booking/activity-details",
+          params: {
+            id: bookingId,
+            status: latestStatus,
+            title: latest?.service || selectedWash.title,
+            vehicle: latest?.vehicle || selectedVehicle,
+            washer: latest?.driver?.name || "Laveur",
+            date: toDateOnlyLabel(latest?.scheduled_at || formatNow()),
+            price: String(latest?.price || selectedWash.price),
+            rating: "",
+            washerPhone: latest?.driver?.phone || "",
+            washerRating: String(latest?.driver?.rating || "4.8"),
+            washerReviews: "0",
+            eta: "8",
+            address: latest?.address || address,
+            washerAvatar: latest?.driver?.avatar_url || "",
+            fromReservation: "1",
+          },
+        });
+      }
+    },
+    [address, router, selectedVehicle, selectedWash.price, selectedWash.title, updateActivityStatus]
+  );
 
   useEffect(() => {
     if (selectedLocationCoords) {
@@ -199,6 +325,7 @@ export default function BookingNowScreen() {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
+        setClientCoords(nextCoords);
         setCoords(nextCoords);
         await reverseGeocode(nextCoords);
       } catch (error) {
@@ -229,6 +356,18 @@ export default function BookingNowScreen() {
   }, [pulseAnim]);
 
   useEffect(() => {
+    if (!hasUserResizedSheet) {
+      setSheetHeight(activeSheetHeight);
+      return;
+    }
+    setSheetHeight((prev) => clampSheetHeight(prev));
+  }, [activeSheetHeight, hasUserResizedSheet]);
+
+  useEffect(() => {
+    sheetHeightRef.current = sheetHeight;
+  }, [sheetHeight]);
+
+  useEffect(() => {
     if (!isSearchingWasher) {
       setSearchElapsed(0);
       return;
@@ -243,9 +382,9 @@ export default function BookingNowScreen() {
 
   useEffect(() => {
     return () => {
-      if (foundTimerRef.current) {
-        clearTimeout(foundTimerRef.current);
-        foundTimerRef.current = null;
+      if (bookingPollRef.current) {
+        clearInterval(bookingPollRef.current);
+        bookingPollRef.current = null;
       }
     };
   }, []);
@@ -346,6 +485,7 @@ export default function BookingNowScreen() {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       };
+      setClientCoords(nextCoords);
       setCoords(nextCoords);
       await reverseGeocode(nextCoords);
       mapRef.current?.animateToRegion(
@@ -375,10 +515,13 @@ export default function BookingNowScreen() {
     }
 
     try {
+      hasNavigatedToDetailsRef.current = false;
+      setSearchElapsed(0);
       setIsSearchingWasher(true);
+      const pulseTarget = clientCoords || coords;
       mapRef.current?.animateToRegion(
         {
-          ...coords,
+          ...pulseTarget,
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
         },
@@ -402,13 +545,15 @@ export default function BookingNowScreen() {
         vehicle: selectedVehicle,
         wash_type_key: selectedWash.key as "exterior" | "interior" | "complete",
         address,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
+        latitude: pulseTarget.latitude,
+        longitude: pulseTarget.longitude,
         price: selectedWash.price,
-        scheduled_at: formatNow(),
+        scheduled_at: new Date().toISOString(),
       });
 
       const booking = created.booking;
+      const bookingId = String(booking.id);
+      setActiveBookingId(bookingId);
       const nextBalance = created.customer_wallet_balance ?? Math.max(0, walletBalance - selectedWash.price);
       updateUserData("walletBalance", nextBalance);
       addWalletTransaction({
@@ -420,7 +565,7 @@ export default function BookingNowScreen() {
       });
 
       addActivity({
-        id: String(booking.id),
+        id: bookingId,
         status: "pending",
         title: selectedWash.title,
         vehicle: selectedVehicle,
@@ -429,44 +574,78 @@ export default function BookingNowScreen() {
         price: selectedWash.price,
         rating: null,
       });
-
-      router.replace({
-        pathname: "/booking/activity-details",
-        params: {
-          id: String(booking.id),
-          status: "pending",
-          title: selectedWash.title,
-          vehicle: selectedVehicle,
-          washer: booking.driver?.name || "En attente",
-          date: formatNow(),
-          price: selectedWash.price.toString(),
-          rating: "",
-          washerPhone: booking.driver?.phone || "",
-          washerRating: "4.8",
-          washerReviews: "0",
-          eta: "8",
-          address,
-          washerAvatar: booking.driver?.avatar_url || "",
-          fromReservation: "1",
-        },
-      });
+      if (bookingPollRef.current) {
+        clearInterval(bookingPollRef.current);
+      }
+      bookingPollRef.current = setInterval(async () => {
+        if (bookingPollBusyRef.current || !bookingId) return;
+        bookingPollBusyRef.current = true;
+        try {
+          const response = await getBooking(bookingId);
+          const latest = response.booking;
+          await handleLiveBookingUpdate(bookingId, latest);
+        } catch {
+          // Continue polling quietly; transient errors should not break active search
+        } finally {
+          bookingPollBusyRef.current = false;
+        }
+      }, 15000);
     } catch (error) {
-      Alert.alert("Erreur", "Impossible d envoyer la demande au serveur.");
-    } finally {
       setIsSearchingWasher(false);
-      setIsWasherFound(false);
-      setFoundWasher(null);
+      setActiveBookingId(null);
+      Alert.alert("Erreur", "Impossible d envoyer la demande au serveur.");
     }
   };
 
-  const handleCancelSearch = () => {
-    if (foundTimerRef.current) {
-      clearTimeout(foundTimerRef.current);
-      foundTimerRef.current = null;
+  useEffect(() => {
+    if (!activeBookingId || !isSearchingWasher) return;
+    let cancelled = false;
+    const syncFromRealtime = async () => {
+      try {
+        const response = await getBooking(activeBookingId);
+        if (cancelled) return;
+        await handleLiveBookingUpdate(activeBookingId, response.booking);
+      } catch {
+        // fallback polling covers errors
+      }
+    };
+    syncFromRealtime().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBookingId, isSearchingWasher, realtimeVersion, handleLiveBookingUpdate]);
+
+  const handleCancelSearch = async () => {
+    if (!activeBookingId) {
+      setIsSearchingWasher(false);
+      return;
     }
-    setIsSearchingWasher(false);
-    setIsWasherFound(false);
-    setFoundWasher(null);
+
+    try {
+      let customerId = backendCustomerId;
+      if (!customerId) {
+        const login = await mobileLogin({
+          role: "customer",
+          phone: phone || "+2250700000001",
+          name: firstName || "Client",
+        });
+        customerId = login.user.id;
+        updateUserData("backendCustomerId", customerId);
+      }
+
+      await cancelBooking(activeBookingId, { customer_id: customerId });
+      updateActivityStatus(activeBookingId, "cancelled");
+    } catch {
+      Alert.alert("Erreur", "Impossible d annuler la course pour le moment.");
+      return;
+    } finally {
+      if (bookingPollRef.current) {
+        clearInterval(bookingPollRef.current);
+        bookingPollRef.current = null;
+      }
+      setActiveBookingId(null);
+      setIsSearchingWasher(false);
+    }
   };
 
   const handleNextStep = () => {
@@ -485,10 +664,12 @@ export default function BookingNowScreen() {
     }
   };
 
+  const pulseCoords = clientCoords || coords;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      {!isSearchingWasher && !isWasherFound && (
+      {!isSearchingWasher && (
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <ChevronLeft size={22} color="#111827" />
@@ -519,6 +700,14 @@ export default function BookingNowScreen() {
               longitudeDelta: 0.005,
             }}
             onPress={handleMapPress}
+            onUserLocationChange={(event) => {
+              const next = event.nativeEvent.coordinate;
+              if (!next?.latitude || !next?.longitude) return;
+              setClientCoords({
+                latitude: next.latitude,
+                longitude: next.longitude,
+              });
+            }}
             showsUserLocation
             showsMyLocationButton={false}
             showsCompass={false}
@@ -529,7 +718,7 @@ export default function BookingNowScreen() {
               </View>
             </Marker>
             {isSearchingWasher && (
-              <Marker coordinate={coords} anchor={{ x: 0.5, y: 0.5 }}>
+              <Marker coordinate={pulseCoords} anchor={{ x: 0.5, y: 0.5 }}>
                 <View style={styles.pulseMarker}>
                   <Animated.View
                     style={[
@@ -576,17 +765,17 @@ export default function BookingNowScreen() {
           </MapView>
         )}
 
-        {(isSearchingWasher || isWasherFound) && (
+        {isSearchingWasher && (
           <View style={styles.mapStatusPill} pointerEvents="none">
             <View style={styles.mapStatusRow}>
               <View
                 style={[
                   styles.mapStatusDot,
-                  isWasherFound ? styles.mapStatusDotFound : styles.mapStatusDotSearching,
+                  styles.mapStatusDotSearching,
                 ]}
               />
               <Text style={styles.mapStatusTitle}>
-                {isWasherFound ? "Laveur trouve" : "Recherche de laveur"}
+                Recherche de laveur
               </Text>
             </View>
             <Text style={styles.mapStatusSubtitle} numberOfLines={1}>
@@ -595,7 +784,7 @@ export default function BookingNowScreen() {
           </View>
         )}
 
-        {!isSearchingWasher && !isWasherFound && (
+        {!isSearchingWasher && (
           <View style={styles.searchBox}>
             <View style={styles.searchInputRow}>
               <Search size={18} color="#6B7280" />
@@ -632,24 +821,28 @@ export default function BookingNowScreen() {
           </View>
         )}
 
-        {!isSearchingWasher && !isWasherFound && (
+        {!isSearchingWasher && (
           <TouchableOpacity
-            style={[styles.locationButton, { bottom: SHEET_EXPANDED_HEIGHT + 16 }]}
+            style={[styles.locationButton, { bottom: sheetHeight + 16 }]}
             onPress={handleUseCurrentLocation}
           >
             <Locate size={20} color="#4A6FFF" />
           </TouchableOpacity>
         )}
 
-        {!isSearchingWasher && !isWasherFound && (
+        {!isSearchingWasher && (
           <View
             style={[
               styles.bottomSheet,
-              { height: SHEET_EXPANDED_HEIGHT },
+              { height: sheetHeight },
             ]}
           >
-            <View style={styles.sheetHeader}>
+            <View
+              style={styles.sheetHeader}
+              {...sheetPanResponder.panHandlers}
+            >
               <View style={styles.sheetHandle} />
+              <Text style={styles.sheetHint}>Glisser pour ajuster</Text>
             </View>
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -867,21 +1060,6 @@ export default function BookingNowScreen() {
           </View>
         )}
 
-        {isWasherFound && foundWasher && (
-          <View style={styles.searchOverlay}>
-            <View style={styles.foundCard}>
-              <View style={styles.foundHeader}>
-                <Text style={styles.foundTitle}>Laveur trouve</Text>
-                <Text style={styles.foundBadge}>ETA {foundWasher.eta} min</Text>
-              </View>
-              <Text style={styles.foundName}>{foundWasher.name}</Text>
-              <Text style={styles.foundSubtitle}>Se dirige vers vous</Text>
-              <TouchableOpacity style={styles.primaryButton} onPress={handleCancelSearch}>
-                <Text style={styles.primaryButtonText}>Annuler</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </View>
     </SafeAreaView>
   );
@@ -1143,8 +1321,10 @@ const styles = StyleSheet.create({
   },
   sheetHeader: {
     alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 10,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   sheetHandle: {
     alignSelf: "center",
@@ -1152,6 +1332,11 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: "#E5E7EB",
+  },
+  sheetHint: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "600",
   },
   addressCard: {
     backgroundColor: "#F8FAFC",

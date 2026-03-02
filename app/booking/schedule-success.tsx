@@ -35,6 +35,7 @@ export default function ScheduleSuccessScreen() {
   const washType = params.washType ? decodeURIComponent(params.washType as string) : '';
   const price = params.price ? parseInt(params.price as string, 10) : 0;
   const scheduledAt = params.scheduledAt ? decodeURIComponent(params.scheduledAt as string) : '';
+  const scheduledAtIso = params.scheduledAtIso ? decodeURIComponent(params.scheduledAtIso as string) : '';
   const activityIdRef = useRef(`sched-${Date.now()}`);
   const billedRef = useRef(false);
   const bookingCreatedRef = useRef(false);
@@ -100,7 +101,7 @@ export default function ScheduleSuccessScreen() {
           latitude: 5.3364,
           longitude: -4.0267,
           price,
-          scheduled_at: scheduledAt || "Aujourd'hui",
+          scheduled_at: scheduledAtIso || new Date().toISOString(),
         });
         activityIdRef.current = String(created.booking.id);
         if (!billedRef.current) {
@@ -130,7 +131,7 @@ export default function ScheduleSuccessScreen() {
     };
 
     syncBooking();
-  }, [address, backendCustomerId, firstName, phone, price, scheduledAt, updateUserData, vehicle, washType]);
+  }, [address, backendCustomerId, firstName, phone, price, scheduledAtIso, scheduledAt, updateUserData, vehicle, washType]);
 
   useEffect(() => {
     const activityId = activityIdRef.current;
