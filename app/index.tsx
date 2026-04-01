@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Redirect, useRootNavigationState } from 'expo-router';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useUserStore } from '@/hooks/useUserData';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { authenticateWithBiometrics, getBiometricLabel } from '@/lib/biometrics';
+import { authenticateWithBiometrics, canUseFaceId, getBiometricLabel } from '@/lib/biometrics';
 
 export default function Index() {
   const rootNavigationState = useRootNavigationState();
@@ -28,6 +28,13 @@ export default function Index() {
       setUnlocking(true);
       try {
         const label = await getBiometricLabel();
+        if (Platform.OS === 'ios') {
+          const faceIdAvailable = await canUseFaceId();
+          if (!faceIdAvailable) {
+            Alert.alert('Face ID indisponible', 'Face ID n est pas configure sur cet iPhone.');
+            return;
+          }
+        }
         const success = await authenticateWithBiometrics(`Se connecter avec ${label}`);
         if (!success) {
           Alert.alert('Authentification annulee', `Utilisez ${label} pour acceder a votre compte.`);

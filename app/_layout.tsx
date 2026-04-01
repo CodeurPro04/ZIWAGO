@@ -23,10 +23,11 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" />
-          <Stack.Screen name="auth/phone" />
-          <Stack.Screen name="auth/verification" />
+          <Stack.Screen name="auth/email" />
+          <Stack.Screen name="auth/callback" />
           <Stack.Screen name="onboarding/step1" />
           <Stack.Screen name="onboarding/step2" />
+          <Stack.Screen name="onboarding/step3" />
           <Stack.Screen name="onboarding/success" />
           <Stack.Screen name="booking/vehicle-selection" />
           <Stack.Screen name="booking/schedule" />

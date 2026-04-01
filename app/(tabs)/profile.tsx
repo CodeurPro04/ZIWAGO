@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Image,
   Switch,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,7 +38,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useUserStore } from '@/hooks/useUserData';
 import { ApiError, getUserProfile, updateUserProfile, uploadUserAvatar } from '@/lib/api';
-import { authenticateWithBiometrics, canUseBiometrics, getBiometricLabel } from '@/lib/biometrics';
+import { authenticateWithBiometrics, canUseBiometrics, canUseFaceId, getBiometricLabel } from '@/lib/biometrics';
 
 type ProfileForm = {
   firstName: string;
@@ -80,6 +81,7 @@ export default function ProfileScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biometrie');
 
   const displayName = useMemo(() => {
     const full = `${form.firstName} ${form.lastName}`.trim();
@@ -87,6 +89,16 @@ export default function ProfileScreen() {
   }, [form.firstName, form.lastName]);
 
   const formattedSpent = useMemo(() => `${stats.total_spent.toLocaleString()} FCFA`, [stats.total_spent]);
+  const biometricSubtitle = useMemo(() => {
+    if (Platform.OS === 'ios') {
+      return biometricLabel === 'Face ID'
+        ? 'Utiliser Face ID pour deverrouiller votre session'
+        : `Utiliser ${biometricLabel} pour deverrouiller votre session`;
+    }
+    return biometricLabel === 'Biometrie'
+      ? 'Utiliser la biometrie de l appareil'
+      : `Utiliser ${biometricLabel} pour deverrouiller votre session`;
+  }, [biometricLabel]);
 
   const syncLabel = useMemo(() => {
     if (!lastSyncedAt) return 'Jamais synchronise';
@@ -158,6 +170,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfile().catch(() => undefined);
   }, [loadProfile]);
+
+  useEffect(() => {
+    getBiometricLabel()
+      .then((label) => setBiometricLabel(label))
+      .catch(() => setBiometricLabel(Platform.OS === 'ios' ? 'Face ID' : 'Biometrie'));
+  }, []);
 
   useEffect(() => {
     if (backendCustomerId && backendCustomerId !== currentUserId) {
@@ -276,6 +294,13 @@ export default function ProfileScreen() {
       }
 
       const label = await getBiometricLabel();
+      if (Platform.OS === 'ios') {
+        const faceIdAvailable = await canUseFaceId();
+        if (!faceIdAvailable) {
+          Alert.alert('Face ID indisponible', 'Face ID n est pas configure sur cet iPhone. Activez Face ID dans les reglages iOS puis reessayez.');
+          return;
+        }
+      }
       const success = await authenticateWithBiometrics(`Activer la connexion ${label}`);
       if (!success) {
         Alert.alert('Activation annulee', `${label} n a pas ete valide.`);
@@ -513,7 +538,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.settingTextWrap}>
                 <Text style={styles.settingTitle}>Connexion biometrique</Text>
-                <Text style={styles.settingSubtitle}>Face ID (iOS) ou empreinte (Android)</Text>
+                <Text style={styles.settingSubtitle}>{biometricSubtitle}</Text>
               </View>
               <Switch
                 value={biometricEnabled}

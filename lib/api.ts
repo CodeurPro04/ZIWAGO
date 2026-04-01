@@ -102,6 +102,20 @@ const normalizeMobileUser = (user: MobileUser): MobileUser => ({
   avatar_url: absolutizeMediaUrl(user.avatar_url),
 });
 
+const extractUserPayload = (payload: any): MobileUser | null => {
+  if (!payload || typeof payload !== 'object') return null;
+  return payload.user || payload.customer || payload.data?.user || payload.data?.customer || null;
+};
+
+const normalizeProfileResponse = <T extends Record<string, any>>(response: T) => {
+  const user = extractUserPayload(response);
+  if (!user) return response;
+  return {
+    ...response,
+    user: normalizeMobileUser(user),
+  };
+};
+
 const normalizeAuthSession = (
   raw: any,
   provider: AuthProvider
@@ -154,7 +168,15 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
 
-  const data = await response.json().catch(() => ({}));
+  const rawText = await response.text().catch(() => '');
+  let data: any = {};
+  if (rawText) {
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = { raw: rawText };
+    }
+  }
   if (!response.ok) {
     throw new ApiError(data?.message || `Erreur API (${response.status})`, response.status, data);
   }
@@ -296,7 +318,7 @@ export async function rateBooking(
 
 export async function getUserProfile(userId: number) {
   const response = await apiRequest<{ user: MobileUser; stats: Record<string, number> }>(`/users/${userId}/profile`);
-  return { ...response, user: normalizeMobileUser(response.user) };
+  return normalizeProfileResponse(response);
 }
 
 export async function updateUserProfile(
@@ -314,7 +336,7 @@ export async function updateUserProfile(
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
-  return { ...response, user: normalizeMobileUser(response.user) };
+  return normalizeProfileResponse(response);
 }
 
 export async function uploadUserAvatar(userId: number, uri: string) {
@@ -329,7 +351,7 @@ export async function uploadUserAvatar(userId: number, uri: string) {
     method: 'POST',
     body: form,
   });
-  return { ...response, user: normalizeMobileUser(response.user) };
+  return normalizeProfileResponse(response);
 }
 
 export { API_BASE_URL, API_ORIGIN };
