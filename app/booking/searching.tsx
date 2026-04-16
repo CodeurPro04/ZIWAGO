@@ -91,7 +91,7 @@ export default function SearchWasherScreen() {
     longitude: paramLongitude = '-4.0212',
     vehicle: paramVehicle = 'Berline',
     washType: paramWashType = 'Exterieur',
-    price: paramPrice = '2000',
+    price: paramPrice = '5000',
     scheduledAt: paramScheduledAt = '',
   } = params;
 
@@ -1013,4 +1013,3 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
 });
-

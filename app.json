@@ -4,16 +4,17 @@
     "slug": "Ziwago",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/iconziwago.png",
     "scheme": "ziwago",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Cette application a besoin d'accÃ©der Ã  votre localisation pour trouver les laveurs de voiture prÃ¨s de chez vous.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cette application a besoin d'accÃ©der Ã  votre localisation pour trouver les laveurs de voiture prÃ¨s de chez vous.",
-        "NSFaceIDUsageDescription": "Utilisez Face ID pour vous connecter de facon securisee a votre compte."
+        "NSLocationWhenInUseUsageDescription": "Cette application a besoin d'accéder à votre localisation pour trouver les laveurs de voiture près de chez vous.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cette application a besoin d'accéder à votre localisation pour trouver les laveurs de voiture près de chez vous.",
+        "NSFaceIDUsageDescription": "Utilisez Face ID pour vous connecter de facon securisee a votre compte.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.anonymous.Ziwago"
     },
@@ -34,11 +35,12 @@
         "android.permission.USE_FINGERPRINT",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "package": "com.anonymous.Ziwago"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/iconziwago.png"
     },
     "plugins": [
       "expo-router",
@@ -46,7 +48,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/iconziwago.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -58,13 +60,19 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Cette application a besoin d'accÃ©der Ã  votre localisation pour trouver les laveurs de voiture prÃ¨s de chez vous."
+          "locationAlwaysAndWhenInUsePermission": "Cette application a besoin d'accéder à votre localisation pour trouver les laveurs de voiture près de chez vous."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "dac9806b-2784-4b0f-9a90-e9ad7f01d49a"
+      }
     }
   }
 }

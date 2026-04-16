@@ -52,18 +52,18 @@ const QUICK_ACTIONS: Array<{
 
 const SERVICE_CARDS = [
   {
+    id: "exterior",
+    title: "Extérieur uniquement",
+    subtitle: "Carrosserie, vitres, pneus",
+    price: "5 000 F",
+    image: require("@/assets/images/exterieur.jpg"),
+  },
+  {
     id: "premium",
     title: "Lavage Complet",
     subtitle: "Extérieur + intérieur",
-    price: "4 000 F",
+    price: "10 000 F",
     image: require("@/assets/images/complet.jpg"),
-  },
-  {
-    id: "interior",
-    title: "Intérieur uniquement",
-    subtitle: "Sièges, tapis, tableau",
-    price: "2 500 F",
-    image: require("@/assets/images/interieur.jpg"),
   },
 ];
 

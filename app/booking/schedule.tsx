@@ -10,7 +10,6 @@ import BerlineSvg from '@/assets/svg/berline.svg';
 import CompacteSvg from '@/assets/svg/compacte.svg';
 import SuvSvg from '@/assets/svg/suv.svg';
 import GroupSvg from '@/assets/svg/Group.svg';
-import Group5Svg from '@/assets/svg/Group5.svg';
 import Group7Svg from '@/assets/svg/Group7.svg';
 
 type TimeSlot = {
@@ -22,14 +21,12 @@ type TimeSlot = {
 };
 
 const WASH_TYPES = {
-  exterior: { title: 'Ext\u00e9rieur uniquement', price: 2000 },
-  interior: { title: 'Int\u00e9rieur uniquement', price: 2500 },
-  complete: { title: 'Lavage complet', price: 4000 },
+  exterior: { title: 'Ext\u00e9rieur uniquement', price: 5000 },
+  complete: { title: 'Lavage complet', price: 10000 },
 };
 
 const WASH_TYPE_OPTIONS = [
   { key: 'exterior', title: WASH_TYPES.exterior.title, price: WASH_TYPES.exterior.price, icon: GroupSvg },
-  { key: 'interior', title: WASH_TYPES.interior.title, price: WASH_TYPES.interior.price, icon: Group5Svg },
   { key: 'complete', title: WASH_TYPES.complete.title, price: WASH_TYPES.complete.price, icon: Group7Svg },
 ];
 
@@ -553,6 +550,4 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
 });
-
-
 

@@ -35,7 +35,6 @@ import BerlineSvg from "@/assets/svg/berline.svg";
 import CompacteSvg from "@/assets/svg/compacte.svg";
 import SuvSvg from "@/assets/svg/suv.svg";
 import GroupSvg from "@/assets/svg/Group.svg";
-import Group5Svg from "@/assets/svg/Group5.svg";
 import Group7Svg from "@/assets/svg/Group7.svg";
 import { cancelBooking, createBooking, getBooking, mobileLogin } from "@/lib/api";
 
@@ -131,23 +130,15 @@ const WASH_TYPES = [
     title: "Extérieur uniquement",
     description: "Carrosserie, vitres et pneus",
     duration: "20 min",
-    price: 2000,
+    price: 5000,
     icon: GroupSvg,
-  },
-  {
-    key: "interior",
-    title: "Intérieur uniquement",
-    description: "Sièges, tapis et tableau de bord",
-    duration: "30 min",
-    price: 2500,
-    icon: Group5Svg,
   },
   {
     key: "complete",
     title: "Lavage complet",
     description: "Extérieur + intérieur complets",
     duration: "45 min",
-    price: 4000,
+    price: 10000,
     icon: Group7Svg,
   },
 ];

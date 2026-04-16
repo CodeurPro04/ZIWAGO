@@ -20,21 +20,14 @@ export default function WashTypeScreen() {
     {
       type: 'exterior',
       title: 'Extérieur uniquement',
-      price: 2000,
+      price: 5000,
       description: 'Carrosserie, vitres et pneus',
       icon: '🚗',
     },
     {
-      type: 'interior',
-      title: 'Intérieur uniquement',
-      price: 2500,
-      description: 'Sièges, tapis et tableau de bord',
-      icon: '🧹',
-    },
-    {
       type: 'complete',
       title: 'Lavage complet',
-      price: 4000,
+      price: 10000,
       description: 'Extérieur et intérieur complets',
       icon: '✨',
     },

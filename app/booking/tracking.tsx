@@ -42,7 +42,7 @@ export default function TrackingScreen() {
   const location = decodeURIComponent((params.address as string) || 'Riviera 2, Carrefour Duncan');
   const vehicle = decodeURIComponent((params.vehicle as string) || 'Berline');
   const washType = decodeURIComponent((params.washType as string) || 'Extérieur uniquement');
-  const price = parseInt((params.price as string) || '2000', 10);
+  const price = parseInt((params.price as string) || '5000', 10);
   const scheduledAt = params.scheduledAt ? decodeURIComponent(params.scheduledAt as string) : null;
   const scheduledAtLabel = scheduledAt ? toDateOnlyLabel(scheduledAt) : null;
 
@@ -420,4 +420,3 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
 });
-
